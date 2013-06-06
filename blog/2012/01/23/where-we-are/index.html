@@ -1,0 +1,281 @@
+
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>Where we are - iWeb Hosting</title>
+  <meta name="author" content="iWeb Hosting">
+
+  
+  <meta name="description" content="A mini state of the union, if you like. I thought it would be worthwhile to outline where we are at the moment, and touch a little on whats coming up &hellip;">
+  
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  <link rel="canonical" href="http://blog.iweb-hosting.co.uk/blog/2012/01/23/where-we-are">
+  <link href="/favicon.png" rel="icon">
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <link href="/atom.xml" rel="alternate" title="iWeb Hosting" type="application/atom+xml">
+  <script src="/javascripts/modernizr-2.0.js"></script>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+  <script>!window.jQuery && document.write(unescape('%3Cscript src="./javascripts/lib/jquery.min.js"%3E%3C/script%3E'))</script>
+  <script src="/javascripts/octopress.js" type="text/javascript"></script>
+  <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
+<link href="http://fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="http://fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+
+  
+  <script type="text/javascript">
+    var _gaq = _gaq || [];
+    _gaq.push(['_setAccount', 'UA-28532069-1']);
+    _gaq.push(['_trackPageview']);
+
+    (function() {
+      var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+      ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+      var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+    })();
+  </script>
+
+
+</head>
+
+<body   >
+  <header role="banner"><hgroup>
+  <h1><a href="/">iWeb Hosting</a></h1>
+  
+    <h2>Code and experience from our operations team</h2>
+  
+</hgroup>
+
+</header>
+  <nav role="navigation"><ul class="subscription" data-subscription="rss">
+  <li><a href="/atom.xml" rel="subscribe-rss" title="subscribe via RSS">RSS</a></li>
+  
+</ul>
+  
+<form action="http://google.com/search" method="get">
+  <fieldset role="search">
+    <input type="hidden" name="q" value="site:blog.iweb-hosting.co.uk" />
+    <input class="search" type="text" name="q" results="0" placeholder="Search"/>
+  </fieldset>
+</form>
+  
+<ul class="main-navigation">
+  <li><a href="/">Blog</a></li>
+  <li><a href="/blog/archives">Archives</a></li>
+</ul>
+
+</nav>
+  <div id="main">
+    <div id="content">
+      <div>
+<article class="hentry" role="article">
+  
+  <header>
+    
+      <h1 class="entry-title">Where We Are</h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2012-01-23T15:41:00+00:00" pubdate data-updated="true">Jan 23<span>rd</span>, 2012</time>
+        
+      </p>
+    
+  </header>
+
+
+<div class="entry-content"><p>A mini <a href="http://en.wikipedia.org/wiki/State_of_the_Union_address">state of the union</a>, if you like. I thought it would be worthwhile to outline where we are at the moment, and touch a little on whats coming up.</p>
+
+<!--more-->
+
+
+<p>iWeb has been in business since 1995 designing and developing websites &ndash; mainly in PHP &ndash; and over time the hosting side of business has grown from a few sites running on a handful of servers into a multi datacenter operation, spanning hundreds of virtual servers.</p>
+
+<p>Managing an infrastructure that large by hand isn&rsquo;t particularly feasible, so we have been using <a href="http://puppetlabs.com/">Puppet</a> for our configuration management, driven by our custom built CMDB/inventory system, which is a <a href="https://www.djangoproject.com/">Django</a> web app. It&rsquo;s about 18 months old now, and it&rsquo;s been instrumental in allowing us to scale our infrastructure &ndash; we&rsquo;ve moved away from shared hosting (one of the motivators to increase our automation), and deployed a lot of new machines, all managed by puppet. We&rsquo;ve learned a lot, and are planning a &lsquo;version 2&rsquo; of the web app this year, which I&rsquo;m sure we&rsquo;ll be blogging about.</p>
+
+<p>In terms of monitoring, we&rsquo;ve experimented a lot since I started here. It&rsquo;s a <a href="https://twitter.com/#!/search/%23monitoringsucks">hot topic</a> everywhere at the moment, and iWeb is just the same. Early on we used <a href="http://munin-monitoring.org/">Munin</a>, which we had trouble scaling &ndash; no so much with the number of hosts, but with the data resolution we were looking for. We switched to <a href="http://collectd.org/">collectd</a> and its been great &ndash; extremely lightweight, even with a 10 second resolution. It has a number of <a href="http://collectd.org/wiki/index.php/Category:Generic_Plugins">generic plugins</a>, which are fantastic for collecting all sorts of application specific metrics (like <a href="http://collectd.org/wiki/index.php/Plugin:Tail/Config#Exim">exim stats</a>, for example). While its proved great at collecting metrics, collected doesn&rsquo;t provide any UI &ndash; instead it ships with a number of <a href="http://collectd.org/wiki/index.php/Category:Callback_write">write plugins</a> which can be used to persist data (or not, as we&rsquo;ll soon see…). Having used Munin we were used to dealing with RRD&rsquo;s, so we ran with those, and cooked up a simple <a href="http://flask.pocoo.org/">Flask</a> based <a href="https://github.com/iwebhosting/collectd-flask">web interface</a> to display them (though we actually used <a href="http://kenny.belitzky.com/projects/collectd-web">collectd-web</a> to render the graphs). For a time we used it&rsquo;s notification system to power our Icinga alerts, but we stopped that in the end &ndash; our alerting is a whole other blog post :)</p>
+
+<p>Lately we&rsquo;ve actually been sending all our collectd metrics into <a href="http://graphite.wikidot.com/">Graphite</a> &ndash; which is a fantastic tool for combining and visualising metrics. We&rsquo;re also able to collect additional metrics not suited to collectd (the data isn&rsquo;t available for collection every n seconds, or it&rsquo;s expensive to collect that data every n seconds). We may even turn off our RRD generation completely in the near future, Graphite has given us many new ways to visualise what&rsquo;s happening (or what has happened) on our infrastructure. Because we in operations largely know the software stacks running on our customers machines, we are able to combine application metrics with system metrics in a way we haven&rsquo;t been able to before. I suspect this will lead to blog posts :)</p>
+
+<p>Our alerting is one of the areas thats least changed in my time here, at least in terms of the technology. Alert states are maintained by <a href="https://www.icinga.org/">Icinga</a>, and we have written an app to aggregate that data, display interesting state changes and if necessary alert the on call personnel that something is broken. This is an area we have targeted for improvement this year &ndash; there&rsquo;s data locked up in here that can be useful to customers, their project managers and developers. It will be fun coming up with new ways to expose it.</p>
+
+<p>iWeb has a popular <a href="http://www.iweb-ftp.co.uk/">ftp service</a> which has been running for a few years now. It&rsquo;s due a bit of a refresh &ndash; not just from a design point of view, but the current system has grown to the point where is poses a number of engineering challenges, particularly around data storage. We&rsquo;ve been working on the new service since just before Christmas and will be ready to launch soon &ndash; it&rsquo;s particularly exciting for us in operations as &ndash; owing to these engineering challenges &ndash; we are developing the whole stack ourselves, and have designed the components parts to be the platform upon which we will launch a number of new hosted services this year. Not only is the technology interesting here, but the process as well &ndash; we&rsquo;ve built a continuous deployment workflow so that we can release features and fixes as fast as possible. As Aaron mentioned, we&rsquo;ll be blogging about this a bit more in the near future.</p>
+
+<p>So, thats a little bit about where we are, and where we&rsquo;re heading at the moment.</p>
+</div>
+
+
+  <footer>
+    <p class="meta">
+      
+  
+
+<span class="byline author vcard">Posted by <span class="fn">Darren</span></span>
+
+      
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2012-01-23T15:41:00+00:00" pubdate data-updated="true">Jan 23<span>rd</span>, 2012</time>
+      
+
+
+    </p>
+    
+      <div class="sharing">
+  
+  <a href="http://twitter.com/share" class="twitter-share-button" data-url="http://blog.iweb-hosting.co.uk/blog/2012/01/23/where-we-are/" data-via="iweb_updates" data-counturl="http://blog.iweb-hosting.co.uk/blog/2012/01/23/where-we-are/" >Tweet</a>
+  
+  
+  <div class="g-plusone" data-size="medium"></div>
+  
+  
+</div>
+
+    
+    <p class="meta">
+      
+        <a class="basic-alignment left" href="/blog/2012/01/21/hubot-http-daemon-support/" title="Previous Post: Hubot HTTP Daemon Support">&laquo; Hubot HTTP Daemon Support</a>
+      
+      
+        <a class="basic-alignment right" href="/blog/2012/01/27/using-bgp-to-serve-high-availability-dns/" title="Next Post: Using BGP to serve High-Availability DNS">Using BGP to serve High-Availability DNS &raquo;</a>
+      
+    </p>
+  </footer>
+</article>
+
+</div>
+
+<aside class="sidebar">
+  
+    <section>
+  <h1>Recent Posts</h1>
+  <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2013/06/06/forcing-exim-local-delivery-on-ubuntu-for-development/">Forcing Exim Local Delivery on Ubuntu (for Development)</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/11/20/moving-varnish-caching-logic-into-php-with-the-curl-vmod/">Moving Varnish Caching Logic Into PHP With the cURL VMOD</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/09/11/diagnosing-magento-speed-issues-with-strace/">Diagnosing Magento Speed Issues With Strace</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/02/24/magento-to-websockets/">Magento to WebSockets, via Redis, Node and Juggernaut</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/02/08/lunchtime-project-apache-space-core-module/">Lunchtime Project: Apache Space Core Module</a>
+      </li>
+    
+  </ul>
+</section>
+
+<section>
+  <h1>GitHub Repos</h1>
+  <ul id="gh_repos">
+    <li class="loading">Status updating...</li>
+  </ul>
+  
+  <a href="https://github.com/iwebhosting">@iwebhosting</a> on GitHub
+  
+  <script type="text/javascript">
+    $(document).ready(function(){
+        if (!window.jXHR){
+            var jxhr = document.createElement('script');
+            jxhr.type = 'text/javascript';
+            jxhr.src = '/javascripts/libs/jXHR.js';
+            var s = document.getElementsByTagName('script')[0];
+            s.parentNode.insertBefore(jxhr, s);
+        }
+
+        github.showRepos({
+            user: 'iwebhosting',
+            count: 10,
+            skip_forks: true,
+            target: '#gh_repos'
+        });
+    });
+  </script>
+  <script src="/javascripts/github.js" type="text/javascript"> </script>
+</section>
+
+
+
+
+
+  
+</aside>
+
+
+    </div>
+  </div>
+  <footer role="contentinfo"><p>
+  Copyright &copy; 2013 - iWeb Hosting -
+  <span class="credit">Powered by <a href="http://octopress.org">Octopress</a></span>
+</p>
+
+</footer>
+  
+
+
+
+
+
+  <script type="text/javascript">
+    (function() {
+      var script = document.createElement('script'); script.type = 'text/javascript'; script.async = true;
+      script.src = 'https://apis.google.com/js/plusone.js';
+      var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(script, s);
+    })();
+  </script>
+
+
+
+  <script type="text/javascript">
+    (function(){
+      var twitterWidgets = document.createElement('script');
+      twitterWidgets.type = 'text/javascript';
+      twitterWidgets.async = true;
+      twitterWidgets.src = 'http://platform.twitter.com/widgets.js';
+      document.getElementsByTagName('head')[0].appendChild(twitterWidgets);
+    })();
+  </script>
+
+
+
+
+
+</body>
+</html>

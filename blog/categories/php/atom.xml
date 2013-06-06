@@ -1,0 +1,296 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+
+  <title><![CDATA[Category: PHP | iWeb Hosting]]></title>
+  <link href="http://blog.iweb-hosting.co.uk/blog/categories/php/atom.xml" rel="self"/>
+  <link href="http://blog.iweb-hosting.co.uk/"/>
+  <updated>2013-06-06T22:29:59+01:00</updated>
+  <id>http://blog.iweb-hosting.co.uk/</id>
+  <author>
+    <name><![CDATA[iWeb Hosting]]></name>
+    
+  </author>
+  <generator uri="http://octopress.org/">Octopress</generator>
+
+  
+  <entry>
+    <title type="html"><![CDATA[Moving Varnish caching logic into PHP with the cURL VMOD]]></title>
+    <link href="http://blog.iweb-hosting.co.uk/blog/2012/11/20/moving-varnish-caching-logic-into-php-with-the-curl-vmod/"/>
+    <updated>2012-11-20T14:46:00+00:00</updated>
+    <id>http://blog.iweb-hosting.co.uk/blog/2012/11/20/moving-varnish-caching-logic-into-php-with-the-curl-vmod</id>
+    <content type="html"><![CDATA[<p>As part of our general quest to provide <a href="/blog/2012/09/11/diagnosing-magento-speed-issues-with-strace/">fast Magento hosting</a>, we&rsquo;ve
+spent some time exploring new features in <a href="https://www.varnish-cache.org/releases/varnish-cache-3.0.0">Varnish 3.0</a>. VMOD support means that there&rsquo;s a supported way of extending VCL with modules in their own name
+spaces. Some of the modules from <a href="https://www.varnish-cache.org/vmods">the VMOD list</a> looked really
+interesting; particularly <a href="https://github.com/zephirworks/libvmod-redis">Redis</a>, <a href="https://github.com/sodabrew/libvmod-memcached">Memcached</a> and
+<a href="https://github.com/varnish/libvmod-curl/">cURL</a>.</p>
+
+<p>In this post I&rsquo;m going to use the <a href="https://github.com/varnish/libvmod-curl/">cURL</a> VMOD to decide whether to show
+a page from the cache or not, by deciding if the user is logged in. This is the
+kind of thing you <em>could</em> do with VCL if you were happy to set custom cookies
+alongside your apps own session cookie, but as you want to make more complex
+decisions I thought it would be interesting to push this into PHP.</p>
+
+<!--more-->
+
+
+<h4>Building the cURL VMOD</h4>
+
+<p>On Ubuntu Precise, install the dependencies:</p>
+
+<pre><code># apt-get install varnish php5 apache2 libvarnishapi-dev varnish-dbg \
+build-essential libcurl4-openssl-dev git automake libtool autoconf \
+libpcre3-dev
+</code></pre>
+
+<p>Grab the varnish source, this is required to build the VMOD. We also have to
+build (but not install) it:</p>
+
+<pre><code>$ apt-get source varnish
+$ cd varnish*
+$ ./configure
+$ make
+</code></pre>
+
+<p>Check the VMOD source code out and generate the configure file:</p>
+
+<pre><code>$ git clone git://github.com/varnish/libvmod-curl.git
+$ cd libvmod-curl
+$ ./autogen.sh
+$ ./configure VARNISHSRC=$HOME/varnish-3.0.2/
+$ make
+# make install
+</code></pre>
+
+<p>On my machine it put everything in the right place, and I was able to just put
+<code>import curl;</code> into my default.vcl and start using it right away.</p>
+
+<h4>Creating a simple PHP test application</h4>
+
+<p>Let&rsquo;s create a small app with a page which is expensive to generate, but can be cached for users who haven&rsquo;t stored any state in their session.</p>
+
+<p><div class='bogus-wrapper'><notextile><figure class='code'><figcaption><span>&ldquo;slow.php&rdquo; </span></figcaption>
+ <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class='php'><span class='line'><span class="x">&amp;lt;?php</span>
+</span><span class='line'><span class="x">session_start();</span>
+</span><span class='line'><span class="x">sleep(5);</span>
+</span><span class='line'><span class="x">print_r($_SESSION);</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div></p>
+
+<p>The above file, if we didn&rsquo;t override Varnish, would never be cachable because
+the <a href="http://php.net/session_start">session_start</a>() call will emit a <code>Set-Cookie</code> header, and Varnish
+will not normally cache a response which sets cookies.</p>
+
+<p>Anonymous users should always see an empty array, and users with state should
+always see a &ldquo;YES&rdquo;.</p>
+
+<p><div class='bogus-wrapper'><notextile><figure class='code'><figcaption><span>&ldquo;start_session.php&rdquo; </span></figcaption>
+ <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class='php'><span class='line'><span class="x">&amp;lt;?php</span>
+</span><span class='line'><span class="x">session_start();</span>
+</span><span class='line'><span class="x">$_SESSION[&amp;lsquo;started&amp;rsquo;] = &amp;lsquo;YES&amp;rsquo;;</span>
+</span><span class='line'><span class="x">session_write_close();</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div></p>
+
+<p>This will set the above &ldquo;YES&rdquo;. Once this is visited, we expect that we&rsquo;ll see
+an uncached version of the site.</p>
+
+<p>As of right now visiting <code>/slow.php</code> should take 5 seconds, reloading it will
+take 5 seconds (and still show a blank array), then visiting
+<code>/start_session.php</code> will be fast and finally visiting <code>/slow.php</code> will take
+5 seconds, and show &ldquo;YES&rdquo;. This is because, right now, nothing is cached.</p>
+
+<h4>Just enough VCL to let PHP make the decision</h4>
+
+<p><div class='bogus-wrapper'><notextile><figure class='code'><figcaption><span>&ldquo;default.vcl&rdquo; </span></figcaption>
+ <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+<span class='line-number'>41</span>
+<span class='line-number'>42</span>
+<span class='line-number'>43</span>
+<span class='line-number'>44</span>
+<span class='line-number'>45</span>
+<span class='line-number'>46</span>
+<span class='line-number'>47</span>
+<span class='line-number'>48</span>
+<span class='line-number'>49</span>
+<span class='line-number'>50</span>
+<span class='line-number'>51</span>
+</pre></td><td class='code'><pre><code class='c'><span class='line'><span class="n">import</span> <span class="n">curl</span><span class="p">;</span><span class="o">&lt;/</span><span class="n">p</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;</span><span class="n">backend</span> <span class="k">default</span> <span class="p">{</span><span class="o">&lt;/</span><span class="n">p</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">pre</span><span class="o">&gt;&lt;</span><span class="n">code</span><span class="o">&gt;</span><span class="p">.</span><span class="n">host</span> <span class="o">=</span> <span class="s">&quot;127.0.0.1&quot;</span><span class="p">;</span>
+</span><span class='line'><span class="p">.</span><span class="n">port</span> <span class="o">=</span> <span class="s">&quot;80&quot;</span><span class="p">;</span>
+</span><span class='line'><span class="o">&lt;/</span><span class="n">code</span><span class="o">&gt;&lt;/</span><span class="n">pre</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;</span><span class="p">}</span><span class="o">&lt;/</span><span class="n">p</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;</span><span class="n">sub</span> <span class="n">vcl_recv</span> <span class="p">{</span><span class="o">&lt;/</span><span class="n">p</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">pre</span><span class="o">&gt;&lt;</span><span class="n">code</span><span class="o">&gt;</span>    <span class="cm">/* The next 5 lines take the cookie line and normalise it to just</span>
+</span><span class='line'><span class="cm">     * the session_id */</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="n">set</span> <span class="n">req</span><span class="p">.</span><span class="n">http</span><span class="p">.</span><span class="n">x</span><span class="o">-</span><span class="n">cookie</span> <span class="o">=</span> <span class="s">&quot;;&quot;</span> <span class="o">+</span> <span class="n">req</span><span class="p">.</span><span class="n">http</span><span class="p">.</span><span class="n">cookie</span><span class="p">;</span>
+</span><span class='line'>    <span class="n">set</span> <span class="n">req</span><span class="p">.</span><span class="n">http</span><span class="p">.</span><span class="n">x</span><span class="o">-</span><span class="n">cookie</span> <span class="o">=</span> <span class="n">regsuball</span><span class="p">(</span><span class="n">req</span><span class="p">.</span><span class="n">http</span><span class="p">.</span><span class="n">x</span><span class="o">-</span><span class="n">cookie</span><span class="p">,</span> <span class="s">&quot;; +&quot;</span><span class="p">,</span> <span class="s">&quot;;&quot;</span><span class="p">);</span>
+</span><span class='line'>    <span class="n">set</span> <span class="n">req</span><span class="p">.</span><span class="n">http</span><span class="p">.</span><span class="n">x</span><span class="o">-</span><span class="n">cookie</span> <span class="o">=</span> <span class="n">regsuball</span><span class="p">(</span><span class="n">req</span><span class="p">.</span><span class="n">http</span><span class="p">.</span><span class="n">x</span><span class="o">-</span><span class="n">cookie</span><span class="p">,</span> <span class="s">&quot;;(PHPSESSID)=&quot;</span><span class="p">,</span> <span class="s">&quot;; &quot;</span><span class="p">);</span>
+</span><span class='line'>    <span class="n">set</span> <span class="n">req</span><span class="p">.</span><span class="n">http</span><span class="p">.</span><span class="n">x</span><span class="o">-</span><span class="n">cookie</span> <span class="o">=</span> <span class="n">regsuball</span><span class="p">(</span><span class="n">req</span><span class="p">.</span><span class="n">http</span><span class="p">.</span><span class="n">x</span><span class="o">-</span><span class="n">cookie</span><span class="p">,</span> <span class="s">&quot;;[^ ][^;]*&quot;</span><span class="p">,</span> <span class="s">&quot;&quot;</span><span class="p">);</span>
+</span><span class='line'>    <span class="n">set</span> <span class="n">req</span><span class="p">.</span><span class="n">http</span><span class="p">.</span><span class="n">x</span><span class="o">-</span><span class="n">cookie</span> <span class="o">=</span> <span class="n">regsuball</span><span class="p">(</span><span class="n">req</span><span class="p">.</span><span class="n">http</span><span class="p">.</span><span class="n">x</span><span class="o">-</span><span class="n">cookie</span><span class="p">,</span> <span class="s">&quot;^[; ]+|[; ]+$&quot;</span><span class="p">,</span> <span class="s">&quot;&quot;</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="n">curl</span><span class="p">.</span><span class="n">fetch</span><span class="p">(</span><span class="s">&quot;http://localhost/decider.php?c=&quot;</span> <span class="o">+</span> <span class="n">req</span><span class="p">.</span><span class="n">http</span><span class="p">.</span><span class="n">x</span><span class="o">-</span><span class="n">cookie</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="n">remove</span> <span class="n">req</span><span class="p">.</span><span class="n">http</span><span class="p">.</span><span class="n">x</span><span class="o">-</span><span class="n">cookie</span><span class="p">;</span>
+</span><span class='line'>    <span class="n">set</span> <span class="n">req</span><span class="p">.</span><span class="n">http</span><span class="p">.</span><span class="n">x</span><span class="o">-</span><span class="n">session</span> <span class="o">=</span> <span class="n">curl</span><span class="p">.</span><span class="n">header</span><span class="p">(</span><span class="s">&quot;X-Started&quot;</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">if</span> <span class="p">(</span><span class="n">req</span><span class="p">.</span><span class="n">http</span><span class="p">.</span><span class="n">x</span><span class="o">-</span><span class="n">session</span> <span class="o">!=</span> <span class="s">&quot;yes&quot;</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>            <span class="n">remove</span> <span class="n">req</span><span class="p">.</span><span class="n">http</span><span class="p">.</span><span class="n">cookie</span><span class="p">;</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'><span class="o">&lt;/</span><span class="n">code</span><span class="o">&gt;&lt;/</span><span class="n">pre</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;</span><span class="p">}</span><span class="o">&lt;/</span><span class="n">p</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;</span><span class="n">sub</span> <span class="n">vcl_hit</span> <span class="p">{</span><span class="o">&lt;/</span><span class="n">p</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">pre</span><span class="o">&gt;&lt;</span><span class="n">code</span><span class="o">&gt;</span>    <span class="k">if</span><span class="p">(</span><span class="n">req</span><span class="p">.</span><span class="n">http</span><span class="p">.</span><span class="n">x</span><span class="o">-</span><span class="n">session</span> <span class="o">==</span> <span class="s">&quot;yes&quot;</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>            <span class="k">return</span> <span class="p">(</span><span class="n">pass</span><span class="p">);</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'><span class="o">&lt;/</span><span class="n">code</span><span class="o">&gt;&lt;/</span><span class="n">pre</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;</span><span class="p">}</span><span class="o">&lt;/</span><span class="n">p</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;</span><span class="n">sub</span> <span class="n">vcl_fetch</span> <span class="p">{</span><span class="o">&lt;/</span><span class="n">p</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">pre</span><span class="o">&gt;&lt;</span><span class="n">code</span><span class="o">&gt;</span>    <span class="k">if</span><span class="p">(</span><span class="n">req</span><span class="p">.</span><span class="n">http</span><span class="p">.</span><span class="n">x</span><span class="o">-</span><span class="n">session</span> <span class="o">!=</span> <span class="s">&quot;yes&quot;</span> <span class="o">&amp;</span><span class="n">amp</span><span class="p">;</span><span class="o">&amp;</span><span class="n">amp</span><span class="p">;</span> <span class="n">req</span><span class="p">.</span><span class="n">url</span> <span class="o">!~</span> <span class="s">&quot;add.php&quot;</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>            <span class="n">remove</span> <span class="n">beresp</span><span class="p">.</span><span class="n">http</span><span class="p">.</span><span class="n">set</span><span class="o">-</span><span class="n">cookie</span><span class="p">;</span>
+</span><span class='line'>            <span class="n">set</span> <span class="n">beresp</span><span class="p">.</span><span class="n">ttl</span> <span class="o">=</span> <span class="mi">5</span><span class="n">m</span><span class="p">;</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'><span class="o">&lt;/</span><span class="n">code</span><span class="o">&gt;&lt;/</span><span class="n">pre</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;</span><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div></p>
+
+<p>The above temporarily adds an <code>X-Cookie</code> header which will just contain the PHP
+session ID. We&rsquo;re going to pass this to our <code>decider.php</code> script, and it will
+pass back an <code>X-Started</code> header saying whether we consider this session to be
+&ldquo;properly&rdquo; started. We do all of this in the <code>vcl_recv</code> step, immediately as
+the request comes in to Varnish.</p>
+
+<p><code>vcl_hit</code> will check if we consider the session to be started and if so will
+issue a pass from now on; this is the code that stops cached pages being
+served to people with &ldquo;proper&rdquo; sessions.</p>
+
+<p><code>vcl_fetch</code> will now look at the response and, if <code>X-Session</code> is not &ldquo;yes&rdquo;,
+will strip off the <code>Set-Cookie</code> and set the ttl, allowing it to be cached.</p>
+
+<p>The only unpleasant part in all of this is where we check if the URL is
+<code>add.php</code>, on line 35. We have to allow the cookie through from this
+script so it can start our session.</p>
+
+<h3>Our example &lsquo;decider&rsquo;</h3>
+
+<p>Finally, the contents of our example decider file:</p>
+
+<p><div class='bogus-wrapper'><notextile><figure class='code'><figcaption><span>&ldquo;decider.php&rdquo; </span></figcaption>
+ <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+</pre></td><td class='code'><pre><code class='php'><span class='line'><span class="x">&amp;lt;?php</span>
+</span><span class='line'><span class="x">session_start();</span>
+</span><span class='line'><span class="x">$sessionid = $&lt;em&gt;GET[&amp;lsquo;c&amp;rsquo;];</span>
+</span><span class='line'><span class="x">/&lt;em&gt; The next line is horribly Ubuntu-specific and should just serve as</span>
+</span><span class='line'><span class="x"> * a demonstration. &lt;/em&gt;/</span>
+</span><span class='line'><span class="x">$b = file_get_contents(&amp;lsquo;/var/lib/php5/sess&lt;/em&gt;&amp;rsquo; . $sessionid, &amp;lsquo;r&amp;rsquo;);</span>
+</span><span class='line'><span class="x">session_decode($b); /&lt;em&gt; This loads the session data into $_SESSION &lt;/em&gt;/</span>
+</span><span class='line'><span class="x">if($_SESSION[&amp;lsquo;started&amp;rsquo;]) {&lt;/p&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="x">&lt;pre&gt;&lt;code&gt;header(&#39;X-Started: yes&#39;);</span>
+</span><span class='line'><span class="x">&lt;/code&gt;&lt;/pre&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="x">&lt;p&gt;}</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div></p>
+
+<p>Basically, we will only consider a session to have started fully if the
+<code>started</code> key in the session exists. The presence of the session cookie
+is not enough.</p>
+
+<p>On an e-commerce store you could decide that a session isn&rsquo;t &ldquo;proper&rdquo; until
+the user is logged in, or has an item in their cart, allowing almost all of
+your visitors to continue to see cached versions of the site.</p>
+
+<p>Some large PHP packages (<em>cough</em> Magento) are very free with sending cookies
+and starting sessions, but the common advice is to override this with
+lots of logic in the VCL about what can start a session. Moving this logic
+back into PHP seems like a natural step.</p>
+
+<p>The speed of your decider is critical; it&rsquo;s hit for every request. In
+production you probably want to have logic above our <code>vcl_recv</code> block
+which short-circuits it for images and other statics. It will probably
+not be acceptible to create, say, a new <code>Mage</code> object from PHP in order
+to check if the page could be served from cache, given the current session.</p>
+
+<p>&nbsp;</p>
+
+<p>If you&rsquo;ve found this useful, please let me know on Twitter via <a href="http://twitter.com/insom">@insom</a>. I
+plan on following this post up with a Magento-specific example of how to
+build a fast store by bypassing much of Magento&rsquo;s logic on starting sessions.</p>
+
+<p><em>That said</em> a colleague has an alternative pure-PHP solution to Magento&rsquo;s
+specific session starting behaviour, but the example will hopefully show how
+the above can be applied to other non-trivial web applications.</p>
+]]></content>
+  </entry>
+  
+</feed>

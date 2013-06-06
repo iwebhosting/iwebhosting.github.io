@@ -1,1 +1,561 @@
-My Octopress Page is coming soon &hellip;
+
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>iWeb Hosting</title>
+  <meta name="author" content="iWeb Hosting">
+
+  
+  <meta name="description" content="Sometimes you want to run development code against your production database before it goes live, as a test, but want to make sure that there are no &hellip;">
+  
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  <link rel="canonical" href="http://blog.iweb-hosting.co.uk">
+  <link href="/favicon.png" rel="icon">
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <link href="/atom.xml" rel="alternate" title="iWeb Hosting" type="application/atom+xml">
+  <script src="/javascripts/modernizr-2.0.js"></script>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+  <script>!window.jQuery && document.write(unescape('%3Cscript src="./javascripts/lib/jquery.min.js"%3E%3C/script%3E'))</script>
+  <script src="/javascripts/octopress.js" type="text/javascript"></script>
+  <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
+<link href="http://fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="http://fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+
+  
+  <script type="text/javascript">
+    var _gaq = _gaq || [];
+    _gaq.push(['_setAccount', 'UA-28532069-1']);
+    _gaq.push(['_trackPageview']);
+
+    (function() {
+      var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+      ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+      var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+    })();
+  </script>
+
+
+</head>
+
+<body   >
+  <header role="banner"><hgroup>
+  <h1><a href="/">iWeb Hosting</a></h1>
+  
+    <h2>Code and experience from our operations team</h2>
+  
+</hgroup>
+
+</header>
+  <nav role="navigation"><ul class="subscription" data-subscription="rss">
+  <li><a href="/atom.xml" rel="subscribe-rss" title="subscribe via RSS">RSS</a></li>
+  
+</ul>
+  
+<form action="http://google.com/search" method="get">
+  <fieldset role="search">
+    <input type="hidden" name="q" value="site:blog.iweb-hosting.co.uk" />
+    <input class="search" type="text" name="q" results="0" placeholder="Search"/>
+  </fieldset>
+</form>
+  
+<ul class="main-navigation">
+  <li><a href="/">Blog</a></li>
+  <li><a href="/blog/archives">Archives</a></li>
+</ul>
+
+</nav>
+  <div id="main">
+    <div id="content">
+      <div class="blog-index">
+  
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2013/06/06/forcing-exim-local-delivery-on-ubuntu-for-development/">Forcing Exim Local Delivery on Ubuntu (for Development)</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2013-06-06T17:16:00+01:00" pubdate data-updated="true">Jun 6<span>th</span>, 2013</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>Sometimes you want to run development code against your production database before it goes live, as a test, but want to make sure that there are no side effects from this process.</p>
+
+<p>Recently a developer at iWeb wanted to test some email code&rsquo;s interaction with a real mail server, without potentially mailing thousands of real customers. Mocks wouldn&rsquo;t be suitable because the tests cross the API boundary; it&rsquo;s not enough to know it&rsquo;s called, they needed to see what it <em>did</em>.</p>
+
+</div>
+  
+  
+    <footer>
+      <a rel="full-article" href="/blog/2013/06/06/forcing-exim-local-delivery-on-ubuntu-for-development/">Read on &rarr;</a>
+    </footer>
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2012/11/20/moving-varnish-caching-logic-into-php-with-the-curl-vmod/">Moving Varnish Caching Logic Into PHP With the cURL VMOD</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2012-11-20T14:46:00+00:00" pubdate data-updated="true">Nov 20<span>th</span>, 2012</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>As part of our general quest to provide <a href="/blog/2012/09/11/diagnosing-magento-speed-issues-with-strace/">fast Magento hosting</a>, we&rsquo;ve
+spent some time exploring new features in <a href="https://www.varnish-cache.org/releases/varnish-cache-3.0.0">Varnish 3.0</a>. VMOD support means that there&rsquo;s a supported way of extending VCL with modules in their own name
+spaces. Some of the modules from <a href="https://www.varnish-cache.org/vmods">the VMOD list</a> looked really
+interesting; particularly <a href="https://github.com/zephirworks/libvmod-redis">Redis</a>, <a href="https://github.com/sodabrew/libvmod-memcached">Memcached</a> and
+<a href="https://github.com/varnish/libvmod-curl/">cURL</a>.</p>
+
+<p>In this post I&rsquo;m going to use the <a href="https://github.com/varnish/libvmod-curl/">cURL</a> VMOD to decide whether to show
+a page from the cache or not, by deciding if the user is logged in. This is the
+kind of thing you <em>could</em> do with VCL if you were happy to set custom cookies
+alongside your apps own session cookie, but as you want to make more complex
+decisions I thought it would be interesting to push this into PHP.</p>
+
+</div>
+  
+  
+    <footer>
+      <a rel="full-article" href="/blog/2012/11/20/moving-varnish-caching-logic-into-php-with-the-curl-vmod/">Read on &rarr;</a>
+    </footer>
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2012/09/11/diagnosing-magento-speed-issues-with-strace/">Diagnosing Magento Speed Issues With Strace</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2012-09-11T10:28:00+01:00" pubdate data-updated="true">Sep 11<span>th</span>, 2012</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>When your application depends on a remote service, and that service is either
+down or slow, it will directly affect your own application&rsquo;s performance.</p>
+
+<p><img src="/assets/magento-slow.png" alt="Slow Website" /></p>
+
+<p>There are tools targeted directly at developers, like <a href="http://www.xdebug.org/">Xdebug</a> and
+<a href="http://kcachegrind.sourceforge.net/html/Home.html">KCachegrind</a> but traditional sysadmin tools also have a place and provide a
+lot of information that language-level debugging tools omit.</p>
+
+</div>
+  
+  
+    <footer>
+      <a rel="full-article" href="/blog/2012/09/11/diagnosing-magento-speed-issues-with-strace/">Read on &rarr;</a>
+    </footer>
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2012/02/24/magento-to-websockets/">Magento to WebSockets, via Redis, Node and Juggernaut</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2012-02-24T23:02:00+00:00" pubdate data-updated="true">Feb 24<span>th</span>, 2012</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>I tried to squeeze more hipster web development tech into the title, but we&rsquo;ll
+have to just make do with the above.</p>
+
+<p>As our developers are building <a href="http://www.magentocommerce.com/">Magento</a> sites, I though it would be useful
+to get to know it better. We know Magento from an operations perspective; it
+likes a lot of IOs and CPU, runs well with ephemeral data stored on RAM disk,
+needs a tuned APC etc., but I like to understand as much of the stack that
+I look after as possible.</p>
+
+</div>
+  
+  
+    <footer>
+      <a rel="full-article" href="/blog/2012/02/24/magento-to-websockets/">Read on &rarr;</a>
+    </footer>
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2012/02/08/lunchtime-project-apache-space-core-module/">Lunchtime Project: Apache Space Core Module</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2012-02-08T21:08:00+00:00" pubdate data-updated="true">Feb 8<span>th</span>, 2012</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>Show and tell time!</p>
+
+<p><a href="http://twitter.com/DazWorrall">Darren</a> mentioned in passing how we should return quotes in the HTTP
+responses for our new product. <a href="http://keithdevens.com/weblog/archive/2002/Jul/20/FuturamaQuotesHTTPHeaders">Slashdot already does this</a> with
+Futurama quotes, and it didn&rsquo;t take long to add support for the main WSGI
+application, but in the interests of security the public-facing website doesn&rsquo;t
+run any dynamic languages; no Python, no PHP.</p>
+
+</div>
+  
+  
+    <footer>
+      <a rel="full-article" href="/blog/2012/02/08/lunchtime-project-apache-space-core-module/">Read on &rarr;</a>
+    </footer>
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2012/01/27/using-bgp-to-serve-high-availability-dns/">Using BGP to Serve High-Availability DNS</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2012-01-27T22:48:00+00:00" pubdate data-updated="true">Jan 27<span>th</span>, 2012</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>Routing protocols, like BGP and OSPF, can be used for more than just
+establishing connectivity. The best-known example of this is probably using BGP
+to blackhole DoS origins, <a href="http://packetlife.net/blog/2009/jul/6/remotely-triggered-black-hole-rtbh-routing/">Remotely Triggered Blackhole Routing</a>.</p>
+
+<p>Another use is to provide failover at layer 3, as an alternative to services
+like <a href="http://www.linux-ha.org/wiki/Main_Page">Heartbeat</a>. This post will explain how to use BGP to provide a highly
+available recursive DNS service.</p>
+
+</div>
+  
+  
+    <footer>
+      <a rel="full-article" href="/blog/2012/01/27/using-bgp-to-serve-high-availability-dns/">Read on &rarr;</a>
+    </footer>
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2012/01/23/where-we-are/">Where We Are</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2012-01-23T15:41:00+00:00" pubdate data-updated="true">Jan 23<span>rd</span>, 2012</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>A mini <a href="http://en.wikipedia.org/wiki/State_of_the_Union_address">state of the union</a>, if you like. I thought it would be worthwhile to outline where we are at the moment, and touch a little on whats coming up.</p>
+
+</div>
+  
+  
+    <footer>
+      <a rel="full-article" href="/blog/2012/01/23/where-we-are/">Read on &rarr;</a>
+    </footer>
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2012/01/21/hubot-http-daemon-support/">Hubot HTTP Daemon Support</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2012-01-21T17:02:00+00:00" pubdate data-updated="true">Jan 21<span>st</span>, 2012</time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p><a href="http://hubot.github.com/">Hubot</a>, Github&rsquo;s excellent CoffeeScript-based chat bot recently gained
+support for running an internal HTTP daemon. Previously, this had to be done by
+hand by plugins which expected to receive events from outside sources, like in
+this post on <a href="http://tomb.io/posts/hubot-ci-and-deploying/">using Hubot for CI and Deploying</a>, which inspired Darren&rsquo;s
+<a href="https://gist.github.com/1494013">fleshed out take</a>.</p>
+
+</div>
+  
+  
+    <footer>
+      <a rel="full-article" href="/blog/2012/01/21/hubot-http-daemon-support/">Read on &rarr;</a>
+    </footer>
+  
+
+
+    </article>
+  
+  <div class="pagination">
+    
+    <a href="/blog/archives">Blog Archives</a>
+    
+  </div>
+</div>
+<aside class="sidebar">
+  
+    <section>
+  <h1>Recent Posts</h1>
+  <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2013/06/06/forcing-exim-local-delivery-on-ubuntu-for-development/">Forcing Exim Local Delivery on Ubuntu (for Development)</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/11/20/moving-varnish-caching-logic-into-php-with-the-curl-vmod/">Moving Varnish Caching Logic Into PHP With the cURL VMOD</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/09/11/diagnosing-magento-speed-issues-with-strace/">Diagnosing Magento Speed Issues With Strace</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/02/24/magento-to-websockets/">Magento to WebSockets, via Redis, Node and Juggernaut</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/02/08/lunchtime-project-apache-space-core-module/">Lunchtime Project: Apache Space Core Module</a>
+      </li>
+    
+  </ul>
+</section>
+
+<section>
+  <h1>GitHub Repos</h1>
+  <ul id="gh_repos">
+    <li class="loading">Status updating&#8230;</li>
+  </ul>
+  
+  <a href="https://github.com/iwebhosting">@iwebhosting</a> on GitHub
+  
+  <script type="text/javascript">
+    $(document).ready(function(){
+        if (!window.jXHR){
+            var jxhr = document.createElement('script');
+            jxhr.type = 'text/javascript';
+            jxhr.src = '/javascripts/libs/jXHR.js';
+            var s = document.getElementsByTagName('script')[0];
+            s.parentNode.insertBefore(jxhr, s);
+        }
+
+        github.showRepos({
+            user: 'iwebhosting',
+            count: 10,
+            skip_forks: true,
+            target: '#gh_repos'
+        });
+    });
+  </script>
+  <script src="/javascripts/github.js" type="text/javascript"> </script>
+</section>
+
+
+
+
+
+  
+</aside>
+
+    </div>
+  </div>
+  <footer role="contentinfo"><p>
+  Copyright &copy; 2013 - iWeb Hosting -
+  <span class="credit">Powered by <a href="http://octopress.org">Octopress</a></span>
+</p>
+
+</footer>
+  
+
+
+
+
+
+  <script type="text/javascript">
+    (function() {
+      var script = document.createElement('script'); script.type = 'text/javascript'; script.async = true;
+      script.src = 'https://apis.google.com/js/plusone.js';
+      var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(script, s);
+    })();
+  </script>
+
+
+
+  <script type="text/javascript">
+    (function(){
+      var twitterWidgets = document.createElement('script');
+      twitterWidgets.type = 'text/javascript';
+      twitterWidgets.async = true;
+      twitterWidgets.src = 'http://platform.twitter.com/widgets.js';
+      document.getElementsByTagName('head')[0].appendChild(twitterWidgets);
+    })();
+  </script>
+
+
+
+
+
+</body>
+</html>

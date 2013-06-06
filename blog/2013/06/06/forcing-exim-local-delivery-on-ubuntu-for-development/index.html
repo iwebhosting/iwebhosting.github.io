@@ -1,0 +1,315 @@
+
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>Forcing Exim Local Delivery on Ubuntu (For Development) - iWeb Hosting</title>
+  <meta name="author" content="iWeb Hosting">
+
+  
+  <meta name="description" content="Sometimes you want to run development code against your production database before it goes live, as a test, but want to make sure that there are no &hellip;">
+  
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  <link rel="canonical" href="http://blog.iweb-hosting.co.uk/blog/2013/06/06/forcing-exim-local-delivery-on-ubuntu-for-development">
+  <link href="/favicon.png" rel="icon">
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <link href="/atom.xml" rel="alternate" title="iWeb Hosting" type="application/atom+xml">
+  <script src="/javascripts/modernizr-2.0.js"></script>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+  <script>!window.jQuery && document.write(unescape('%3Cscript src="./javascripts/lib/jquery.min.js"%3E%3C/script%3E'))</script>
+  <script src="/javascripts/octopress.js" type="text/javascript"></script>
+  <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
+<link href="http://fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="http://fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+
+  
+  <script type="text/javascript">
+    var _gaq = _gaq || [];
+    _gaq.push(['_setAccount', 'UA-28532069-1']);
+    _gaq.push(['_trackPageview']);
+
+    (function() {
+      var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+      ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+      var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+    })();
+  </script>
+
+
+</head>
+
+<body   >
+  <header role="banner"><hgroup>
+  <h1><a href="/">iWeb Hosting</a></h1>
+  
+    <h2>Code and experience from our operations team</h2>
+  
+</hgroup>
+
+</header>
+  <nav role="navigation"><ul class="subscription" data-subscription="rss">
+  <li><a href="/atom.xml" rel="subscribe-rss" title="subscribe via RSS">RSS</a></li>
+  
+</ul>
+  
+<form action="http://google.com/search" method="get">
+  <fieldset role="search">
+    <input type="hidden" name="q" value="site:blog.iweb-hosting.co.uk" />
+    <input class="search" type="text" name="q" results="0" placeholder="Search"/>
+  </fieldset>
+</form>
+  
+<ul class="main-navigation">
+  <li><a href="/">Blog</a></li>
+  <li><a href="/blog/archives">Archives</a></li>
+</ul>
+
+</nav>
+  <div id="main">
+    <div id="content">
+      <div>
+<article class="hentry" role="article">
+  
+  <header>
+    
+      <h1 class="entry-title">Forcing Exim Local Delivery on Ubuntu (for Development)</h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2013-06-06T17:16:00+01:00" pubdate data-updated="true">Jun 6<span>th</span>, 2013</time>
+        
+      </p>
+    
+  </header>
+
+
+<div class="entry-content"><p>Sometimes you want to run development code against your production database before it goes live, as a test, but want to make sure that there are no side effects from this process.</p>
+
+<p>Recently a developer at iWeb wanted to test some email code&rsquo;s interaction with a real mail server, without potentially mailing thousands of real customers. Mocks wouldn&rsquo;t be suitable because the tests cross the API boundary; it&rsquo;s not enough to know it&rsquo;s called, they needed to see what it <em>did</em>.</p>
+
+<!--more-->
+
+
+<h4>Installing Exim</h4>
+
+<p>If you don&rsquo;t already have Exim installed, just install <code>exim4-daemon-light</code>. When Debconf asks you for the configuration type, you want &ldquo;Local Delivery Only&rdquo;:</p>
+
+<p><img src="http://17k.co.uk/s/09207fc6.png" alt="Local delivery" /></p>
+
+<p>Select what you want for the next three dialogs, and you <em>do</em> want to split configuration into small files:</p>
+
+<p><img src="http://17k.co.uk/s/91ffcd4b.png" alt="Small files, please" /></p>
+
+<p>Now, create the file <code>/etc/exim4/conf.d/router/050_force_local_delivery</code> with the following contents:</p>
+
+<pre><code>forced:
+  debug_print = "R: forced for $local_part@$domain"
+  driver = redirect
+  allow_fail
+  allow_defer
+  data = "iweb" # change this to a local user on your machine
+</code></pre>
+
+<p>Update your config and restart Exim:</p>
+
+<pre><code># update-exim4.conf
+# /etc/init.d/exim4 restart
+</code></pre>
+
+<p>Putting it in as &ldquo;050&rdquo; means that this will fire before the <code>nonlocal</code> router, which is in <code>200_exim4-config_primary</code>. If you see the error &ldquo;Mailing to remote domains not supported&rdquo;, check that your file is named correctly and that you ran <code>update-exim4.conf</code> and restarted Exim.</p>
+
+<p>And then give it a test:</p>
+
+<pre><code># mail anyone@anywhere.com &lt; /dev/null
+No message, no subject; hope that's ok
+# tail -3 /var/log/exim4/mainlog
+2013-06-06 17:36:32 1UkdAu-0000b5-3y &lt;= root@test.iweb U=root P=local S=338
+2013-06-06 17:36:32 1UkdAu-0000b5-3y =&gt; iweb &lt;anyone@anywhere.com&gt; R=local_user T=maildir_home
+2013-06-06 17:36:32 1UkdAu-0000b5-3y Completed
+</code></pre>
+
+<p>&nbsp;</p>
+
+<p>If you&rsquo;ve found this useful, please let me know on Twitter via <a href="http://twitter.com/insom">@insom</a>.</p>
+</div>
+
+
+  <footer>
+    <p class="meta">
+      
+  
+
+<span class="byline author vcard">Posted by <span class="fn">Aaron Brady</span></span>
+
+      
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2013-06-06T17:16:00+01:00" pubdate data-updated="true">Jun 6<span>th</span>, 2013</time>
+      
+
+<span class="categories">
+  
+    <a class='category' href='/blog/categories/exim/'>Exim</a>, <a class='category' href='/blog/categories/ubuntu/'>Ubuntu</a>
+  
+</span>
+
+
+    </p>
+    
+      <div class="sharing">
+  
+  <a href="http://twitter.com/share" class="twitter-share-button" data-url="http://blog.iweb-hosting.co.uk/blog/2013/06/06/forcing-exim-local-delivery-on-ubuntu-for-development/" data-via="iweb_updates" data-counturl="http://blog.iweb-hosting.co.uk/blog/2013/06/06/forcing-exim-local-delivery-on-ubuntu-for-development/" >Tweet</a>
+  
+  
+  <div class="g-plusone" data-size="medium"></div>
+  
+  
+</div>
+
+    
+    <p class="meta">
+      
+        <a class="basic-alignment left" href="/blog/2012/11/20/moving-varnish-caching-logic-into-php-with-the-curl-vmod/" title="Previous Post: Moving Varnish caching logic into PHP with the cURL VMOD">&laquo; Moving Varnish caching logic into PHP with the cURL VMOD</a>
+      
+      
+    </p>
+  </footer>
+</article>
+
+</div>
+
+<aside class="sidebar">
+  
+    <section>
+  <h1>Recent Posts</h1>
+  <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2013/06/06/forcing-exim-local-delivery-on-ubuntu-for-development/">Forcing Exim Local Delivery on Ubuntu (for Development)</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/11/20/moving-varnish-caching-logic-into-php-with-the-curl-vmod/">Moving Varnish Caching Logic Into PHP With the cURL VMOD</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/09/11/diagnosing-magento-speed-issues-with-strace/">Diagnosing Magento Speed Issues With Strace</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/02/24/magento-to-websockets/">Magento to WebSockets, via Redis, Node and Juggernaut</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/02/08/lunchtime-project-apache-space-core-module/">Lunchtime Project: Apache Space Core Module</a>
+      </li>
+    
+  </ul>
+</section>
+
+<section>
+  <h1>GitHub Repos</h1>
+  <ul id="gh_repos">
+    <li class="loading">Status updating...</li>
+  </ul>
+  
+  <a href="https://github.com/iwebhosting">@iwebhosting</a> on GitHub
+  
+  <script type="text/javascript">
+    $(document).ready(function(){
+        if (!window.jXHR){
+            var jxhr = document.createElement('script');
+            jxhr.type = 'text/javascript';
+            jxhr.src = '/javascripts/libs/jXHR.js';
+            var s = document.getElementsByTagName('script')[0];
+            s.parentNode.insertBefore(jxhr, s);
+        }
+
+        github.showRepos({
+            user: 'iwebhosting',
+            count: 10,
+            skip_forks: true,
+            target: '#gh_repos'
+        });
+    });
+  </script>
+  <script src="/javascripts/github.js" type="text/javascript"> </script>
+</section>
+
+
+
+
+
+  
+</aside>
+
+
+    </div>
+  </div>
+  <footer role="contentinfo"><p>
+  Copyright &copy; 2013 - iWeb Hosting -
+  <span class="credit">Powered by <a href="http://octopress.org">Octopress</a></span>
+</p>
+
+</footer>
+  
+
+
+
+
+
+  <script type="text/javascript">
+    (function() {
+      var script = document.createElement('script'); script.type = 'text/javascript'; script.async = true;
+      script.src = 'https://apis.google.com/js/plusone.js';
+      var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(script, s);
+    })();
+  </script>
+
+
+
+  <script type="text/javascript">
+    (function(){
+      var twitterWidgets = document.createElement('script');
+      twitterWidgets.type = 'text/javascript';
+      twitterWidgets.async = true;
+      twitterWidgets.src = 'http://platform.twitter.com/widgets.js';
+      document.getElementsByTagName('head')[0].appendChild(twitterWidgets);
+    })();
+  </script>
+
+
+
+
+
+</body>
+</html>

@@ -1,0 +1,479 @@
+
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>Diagnosing Magento speed issues with strace - iWeb Hosting</title>
+  <meta name="author" content="iWeb Hosting">
+
+  
+  <meta name="description" content="When your application depends on a remote service, and that service is either
+down or slow, it will directly affect your own application&rsquo;s &hellip;">
+  
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  <link rel="canonical" href="http://blog.iweb-hosting.co.uk/blog/2012/09/11/diagnosing-magento-speed-issues-with-strace">
+  <link href="/favicon.png" rel="icon">
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <link href="/atom.xml" rel="alternate" title="iWeb Hosting" type="application/atom+xml">
+  <script src="/javascripts/modernizr-2.0.js"></script>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+  <script>!window.jQuery && document.write(unescape('%3Cscript src="./javascripts/lib/jquery.min.js"%3E%3C/script%3E'))</script>
+  <script src="/javascripts/octopress.js" type="text/javascript"></script>
+  <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
+<link href="http://fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="http://fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+
+  
+  <script type="text/javascript">
+    var _gaq = _gaq || [];
+    _gaq.push(['_setAccount', 'UA-28532069-1']);
+    _gaq.push(['_trackPageview']);
+
+    (function() {
+      var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+      ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+      var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+    })();
+  </script>
+
+
+</head>
+
+<body   >
+  <header role="banner"><hgroup>
+  <h1><a href="/">iWeb Hosting</a></h1>
+  
+    <h2>Code and experience from our operations team</h2>
+  
+</hgroup>
+
+</header>
+  <nav role="navigation"><ul class="subscription" data-subscription="rss">
+  <li><a href="/atom.xml" rel="subscribe-rss" title="subscribe via RSS">RSS</a></li>
+  
+</ul>
+  
+<form action="http://google.com/search" method="get">
+  <fieldset role="search">
+    <input type="hidden" name="q" value="site:blog.iweb-hosting.co.uk" />
+    <input class="search" type="text" name="q" results="0" placeholder="Search"/>
+  </fieldset>
+</form>
+  
+<ul class="main-navigation">
+  <li><a href="/">Blog</a></li>
+  <li><a href="/blog/archives">Archives</a></li>
+</ul>
+
+</nav>
+  <div id="main">
+    <div id="content">
+      <div>
+<article class="hentry" role="article">
+  
+  <header>
+    
+      <h1 class="entry-title">Diagnosing Magento Speed Issues With Strace</h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2012-09-11T10:28:00+01:00" pubdate data-updated="true">Sep 11<span>th</span>, 2012</time>
+        
+      </p>
+    
+  </header>
+
+
+<div class="entry-content"><p>When your application depends on a remote service, and that service is either
+down or slow, it will directly affect your own application&rsquo;s performance.</p>
+
+<p><img src="/assets/magento-slow.png" alt="Slow Website" /></p>
+
+<p>There are tools targeted directly at developers, like <a href="http://www.xdebug.org/">Xdebug</a> and
+<a href="http://kcachegrind.sourceforge.net/html/Home.html">KCachegrind</a> but traditional sysadmin tools also have a place and provide a
+lot of information that language-level debugging tools omit.</p>
+
+<!--more-->
+
+
+<p>Because tools like <a href="http://linux.die.net/man/1/gdb">gdb</a>, <a href="http://linux.die.net/man/1/time">time</a> and <a href="http://linux.die.net/man/1/strace">strace</a> are designed to work on
+single processes, the first thing to do is get your Magento page running as a
+separate process, outside of Apache or any other web server. All Magento wants
+to know is the HTTP Host header and the URI that has been called. You can pass
+these in via the standard <a href="http://www.ietf.org/rfc/rfc3875">cgi-bin</a> environment variables. Running just
+<code>php</code> on its own will fire up an interpreter, just like if it was called as a
+cgi-bin and similar to how it run a script when called through a web server.</p>
+
+<p>Just change to the top of your Magento tree; typically your <code>public_html</code> or
+equivalent folder and run a single request:</p>
+
+<pre><code>$ HTTP_HOST=www.website.com REQUEST_URI=/slow-page.html php index.php
+</code></pre>
+
+<p>You should get a screenful of generated HTML. We don&rsquo;t care about this too
+much, so in future we&rsquo;ll add <code>&gt;/dev/null</code> to suppress the output of the script.</p>
+
+<p>The simplest thing we can do is run <a href="http://linux.die.net/man/1/time">time</a> &ndash; this will give us at least the
+amount of CPU seconds spent in user and system, and the &lsquo;wall clock time&rsquo; of
+how long the process took to run. On modern Linux systems it also gives the
+percentage CPU used, the peak amount of RAM consumed and the amount of
+pagefaults.</p>
+
+<pre><code>$ HTTP_HOST=www.website.com REQUEST_URI=/slow-page.html time php index.php &gt;/dev/null
+
+0.82user 0.24system 0:01.73elapsed 60%CPU (0avgtext+0avgdata 403520maxresident)k
+</code></pre>
+
+<p>This one page took 1.7 seconds to render completely, 0.8 of those seconds were
+used by PHP using the CPU for something, and 0.24 were spent in system, meaning
+that the Linux kernel was doing work on your behalf. The remaining 0.67 seconds
+were spent waiting for &hellip; something. In most cases the something is a response
+from the network or from the disks. (The response from the network can include
+things like MySQL, which is effectively a network connection, even if it&rsquo;s on
+the same machine). This request also took 403Mb of RAM to run, including shared
+memory.</p>
+
+<p>In an ideal world, each request would spend as close to 100% of its time in
+user as possible, and none of it waiting or in system, so let&rsquo;s try and track
+down where those missing milliseconds are going. For this, we&rsquo;ll use
+<a href="http://linux.die.net/man/1/strace">strace</a>.</p>
+
+<p>In brief, strace will print out each of the system calls that your process
+makes. A system call is where control is passed from user to system, basically
+whenever you ask the kernel to do something for you, like open a file, send
+data over a socket, or write something to a file descriptor. It also includes a
+lot of noisy stuff like getting the time of day, allocating RAM and blocking on
+mutexes, so we&rsquo;ll apply a filter to strace to just get the system calls we&rsquo;re
+likely to be interested in. You can do this with the <code>-e</code> parameter, and full
+documentation is in the <a href="http://linux.die.net/man/1/strace">man page</a>.</p>
+
+<pre><code>$ HTTP_HOST=www.website.com REQUEST_URI=/slow-page.html strace -e trace=sendto,connect,open,write php index.php &gt;/dev/null
+</code></pre>
+
+<p>There will be a <em>lot</em> of output, so here&rsquo;s a quick guide to figuring out what&rsquo;s
+going on.</p>
+
+<p>If you see a lot of lines like this:</p>
+
+<pre><code>open("/home/website/www.website.com/public_html/app/code/core/Mage/Catalog/Model/Product/Media/Config.php", O_RDONLY) = 6
+open("/home/website/www.website.com/public_html/app/code/core/Mage/Media/Model/Image/Config/Interface.php", O_RDONLY) = 6
+open("/home/website/www.website.com/public_html/app/code/core/Mage/Catalog/Helper/Image.php", O_RDONLY) = 6
+open("/home/website/www.website.com/public_html/app/code/core/Mage/Catalog/Model/Product/Image.php", O_RDONLY) = 6
+</code></pre>
+
+<p>Then you aren&rsquo;t using compilation. This means that Magento is having to open
+hundreds (797 in my test) of little files, and that&rsquo;s contributing to your time
+spent in system. For our purposes though, having compilation off makes things
+easier to debug, so for the next run turn it off, if it isn&rsquo;t off already. Look
+for any places where the output appears to pause. In my test, I saw a sendto()
+call block. Adding <code>-T</code> to strace gives you the relative time spend in each
+system call, at the end of the line.</p>
+
+<figure class='code'><figcaption><span>&#8220;Long strace(1) output&#8221; </span></figcaption>
+<div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>open("/home/website/www.website.com/public_html/app/design/front-end/iweb/default/template/catalog/product/view/media.phtml", O_RDONLY) = 6 &lt;0.000027>
+</span><span class='line'>open("/home/website/www.website.com/public_html/app/code/core/Mage/Catalog/Model/Product/Media/Config.php", O_RDONLY) = 6 &lt;0.000020>
+</span><span class='line'>open("/home/website/www.website.com/public_html/app/code/core/Mage/Media/Model/Image/Config/Interface.php", O_RDONLY) = 6 &lt;0.000018>
+</span><span class='line'>open("/home/website/www.website.com/public_html/app/code/core/Mage/Catalog/Helper/Image.php", O_RDONLY) = 6 &lt;0.000019>
+</span><span class='line'>open("/home/website/www.website.com/public_html/app/code/core/Mage/Catalog/Model/Product/Image.php", O_RDONLY) = 6 &lt;0.000019>
+</span><span class='line'>open("/home/website/www.website.com/public_html/media/catalog/product/c/a/camden_brown_2.png", O_RDONLY) = 6 &lt;0.000018>
+</span><span class='line'>open("/home/website/www.website.com/public_html/media/catalog/product/c/a/camden_brown.png", O_RDONLY) = 6 &lt;0.000017>
+</span><span class='line'>open("/home/website/www.website.com/public_html/lib/Varien/Image.php", O_RDONLY) = 6 &lt;0.000025>
+</span><span class='line'>open("/home/website/www.website.com/public_html/lib/Varien/Image/Adapter.php", O_RDONLY) = 6 &lt;0.000018>
+</span><span class='line'>open("/home/website/www.website.com/public_html/lib/Varien/Image/Adapter/Gd2.php", O_RDONLY) = 6 &lt;0.000018>
+</span><span class='line'>open("/home/website/www.website.com/public_html/lib/Varien/Image/Adapter/Abstract.php", O_RDONLY) = 6 &lt;0.000017>
+</span><span class='line'>open("/home/website/www.website.com/public_html/media/catalog/product/c/a/camden_brown.png", O_RDONLY) = 6 &lt;0.000023>
+</span><span class='line'>sendto(6, "\24\0\0\0\26\0\1\3\305\tOP\0\0\0\0\0\0\0\0", 20, 0, {sa_family=AF_NETLINK, pid=0, groups=00000000}, 12) = 20 &lt;0.000026>
+</span><span class='line'>connect(6, {sa_family=AF_FILE, path="/var/run/nscd/socket"}, 110) = -1 ENOENT (No such file or directory) &lt;0.000025>
+</span><span class='line'>connect(6, {sa_family=AF_FILE, path="/var/run/nscd/socket"}, 110) = -1 ENOENT (No such file or directory) &lt;0.000531>
+</span><span class='line'>open("/etc/host.conf", O_RDONLY)        = 6 &lt;0.000019>
+</span><span class='line'>open("/etc/resolv.conf", O_RDONLY)      = 6 &lt;0.000017>
+</span><span class='line'>open("/etc/hosts", O_RDONLY|O_CLOEXEC)  = 6 &lt;0.000017>
+</span><span class='line'>connect(6, {sa_family=AF_INET, sin_port=htons(80), sin_addr=inet_addr("10.7.0.197")}, 16) = -1 EINPROGRESS (Operation now in progress) &lt;0.000091>
+</span><span class='line'>sendto(6, "GET /media/catalog/product/c/a/c"..., 60, MSG_DONTWAIT, NULL, 0) = 60 &lt;0.000167>
+</span><span class='line'>sendto(6, "Host: www.website.com\r\n", 27, MSG_DONTWAIT, NULL, 0) = 27 &lt;0.000041>
+</span><span class='line'>sendto(6, "\r\n", 2, MSG_DONTWAIT, NULL, 0) = 2 &lt;0.000192></span></code></pre></td></tr></table></div></figure>
+
+
+<p>There&rsquo;s a lot of information here, but taking it line by line:</p>
+
+<ul>
+<li><p>1: The <code>Catalog_Product_Media</code> template is loaded. This is in a custom skin,
+so it&rsquo;s a good place to look for inadvertent changes that might affect speed.</p></li>
+<li><p>2-5: Dependencies of this template are loaded by the Magento autoloader,
+<code>Catalog_Model_Product_Media_Config</code> through to <code>Catalog_Model_Product_Image</code>.</p></li>
+<li><p>6-7: Loading source images from the media folder.</p></li>
+<li><p>8-11: Creating <code>Varien_Image</code> objects, loading the classes in.</p></li>
+<li><p>13-18: Doing a lookup of the website&rsquo;s own name, in nscd and then in
+/etc/hosts. Because the site is defined in /etc/hosts no DNS lookup is done,
+but it would happen here if that wasn&rsquo;t the case. It would look like this:</p></li>
+</ul>
+
+
+<figure class='code'><figcaption><span>&#8220;Example DNS request&#8221; </span></figcaption>
+<div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>connect(6, {sa_family=AF_INET, sin_port=htons(53), sin_addr=inet_addr("91.208.170.133")}, 16) = 0 &lt;0.000021>
+</span><span class='line'>sendto(6, "\3140\1\0\0\1\0\0\0\0\0\0\3www\vwebsite\3com"..., 37, MSG_NOSIGNAL, NULL, 0) = 37 &lt;0.000060>
+</span><span class='line'>connect(6, {sa_family=AF_INET, sin_port=htons(53), sin_addr=inet_addr("91.208.170.133")}, 16) = 0 &lt;0.000015>
+</span><span class='line'>sendto(6, "&\312\1\0\0\1\0\0\0\0\0\0\3www\vwebsite\3com"..., 37, MSG_NOSIGNAL, NULL, 0) = 37 &lt;0.000037>
+</span><span class='line'>connect(6, {sa_family=AF_INET, sin_port=htons(53), sin_addr=inet_addr("91.208.170.133")}, 16) = 0 &lt;0.000015>
+</span><span class='line'>sendto(6, "\23m\1\0\0\1\0\0\0\0\0\0\3www\vwebsite\3com"..., 37, MSG_NOSIGNAL, NULL, 0) = 37 &lt;0.000037></span></code></pre></td></tr></table></div></figure>
+
+
+<ul>
+<li><p>19: Creating a connection to the web-server (ourselves in this case).</p></li>
+<li><p>20-22: Making a request for an image that we have locally.</p></li>
+</ul>
+
+
+<p>At this point the site will block, waiting for the web-server to respond with
+an image. If, as in this case, it&rsquo;s the local server, you may not even notice
+because it&rsquo;s so quick, but if your site is under load, or the images are being
+loaded from a CDN there could be a significant delay introduced. Let&rsquo;s find the
+code that caused this &ndash; the best place to start looking is the .phtml file
+nearest to the network request.</p>
+
+<p>I can&rsquo;t show the full file, but a careful read through of the file shows that
+we&rsquo;re passing a URL to a function expecting a file page. Due to PHP&rsquo;s <a href="http://php.net/manual/en/wrappers.php">fopen()
+wrappers</a> you can actually do this, and your code will run, and you may not
+even realise the resources that are being consumed behind the scenes.</p>
+
+<figure class='code'><figcaption><span>&#8220;Accidental fopen() wrapper usage&#8221; </span></figcaption>
+ <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+</pre></td><td class='code'><pre><code class='php'><span class='line'><span class="cp">&lt;?php</span>
+</span><span class='line'><span class="nv">$img</span> <span class="o">=</span> <span class="k">array</span><span class="p">(</span>
+</span><span class='line'>  <span class="s1">&#39;zoomImg&#39;</span>       <span class="o">=&gt;</span> <span class="nv">$_image</span><span class="o">-&gt;</span><span class="na">getData</span><span class="p">(</span><span class="s1">&#39;url&#39;</span><span class="p">),</span>
+</span><span class='line'>  <span class="s1">&#39;zoomImgPath&#39;</span><span class="o">=&gt;</span> <span class="nv">$_image</span><span class="o">-&gt;</span><span class="na">getData</span><span class="p">(</span><span class="s1">&#39;path&#39;</span><span class="p">),</span>
+</span><span class='line'><span class="p">);</span>
+</span><span class='line'><span class="nv">$img</span><span class="p">[</span><span class="s1">&#39;size&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">getimagesize</span><span class="p">(</span><span class="nv">$img</span><span class="p">[</span><span class="s1">&#39;zoomImg&#39;</span><span class="p">]);</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Changing that last <code>zoomImg</code> to <code>zoomImgPath</code> resolves the issue &ndash; the results
+on the front-end are the same, but no extra requests are made to the
+web-server. This frees up more connections for legitimate users and has removed
+a potential source for latency.</p>
+
+<p>As with any micro-benchmark like this, it&rsquo;s important to check that the gains
+that you&rsquo;re making are significant in the end, and also very important to check
+that in your production environment you see an improvement and no regressions.
+In this case, you would probably run a <a href="http://www.euperia.com/linux/tools-and-utilities/speed-testing-your-website-with-siege-part-one/720">siege</a> against the site before and
+after the change to verify that the improvements are valid when running under
+an actual web server.</p>
+
+<p>If you&rsquo;ve found this useful, please let me know on Twitter via <a href="http://twitter.com/insom">@insom</a></p>
+</div>
+
+
+  <footer>
+    <p class="meta">
+      
+  
+
+<span class="byline author vcard">Posted by <span class="fn">Aaron Brady</span></span>
+
+      
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2012-09-11T10:28:00+01:00" pubdate data-updated="true">Sep 11<span>th</span>, 2012</time>
+      
+
+<span class="categories">
+  
+    <a class='category' href='/blog/categories/magento/'>Magento</a>
+  
+</span>
+
+
+    </p>
+    
+      <div class="sharing">
+  
+  <a href="http://twitter.com/share" class="twitter-share-button" data-url="http://blog.iweb-hosting.co.uk/blog/2012/09/11/diagnosing-magento-speed-issues-with-strace/" data-via="iweb_updates" data-counturl="http://blog.iweb-hosting.co.uk/blog/2012/09/11/diagnosing-magento-speed-issues-with-strace/" >Tweet</a>
+  
+  
+  <div class="g-plusone" data-size="medium"></div>
+  
+  
+</div>
+
+    
+    <p class="meta">
+      
+        <a class="basic-alignment left" href="/blog/2012/02/24/magento-to-websockets/" title="Previous Post: Magento to WebSockets, via Redis, Node and Juggernaut">&laquo; Magento to WebSockets, via Redis, Node and Juggernaut</a>
+      
+      
+        <a class="basic-alignment right" href="/blog/2012/11/20/moving-varnish-caching-logic-into-php-with-the-curl-vmod/" title="Next Post: Moving Varnish caching logic into PHP with the cURL VMOD">Moving Varnish caching logic into PHP with the cURL VMOD &raquo;</a>
+      
+    </p>
+  </footer>
+</article>
+
+</div>
+
+<aside class="sidebar">
+  
+    <section>
+  <h1>Recent Posts</h1>
+  <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2013/06/06/forcing-exim-local-delivery-on-ubuntu-for-development/">Forcing Exim Local Delivery on Ubuntu (for Development)</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/11/20/moving-varnish-caching-logic-into-php-with-the-curl-vmod/">Moving Varnish Caching Logic Into PHP With the cURL VMOD</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/09/11/diagnosing-magento-speed-issues-with-strace/">Diagnosing Magento Speed Issues With Strace</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/02/24/magento-to-websockets/">Magento to WebSockets, via Redis, Node and Juggernaut</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2012/02/08/lunchtime-project-apache-space-core-module/">Lunchtime Project: Apache Space Core Module</a>
+      </li>
+    
+  </ul>
+</section>
+
+<section>
+  <h1>GitHub Repos</h1>
+  <ul id="gh_repos">
+    <li class="loading">Status updating...</li>
+  </ul>
+  
+  <a href="https://github.com/iwebhosting">@iwebhosting</a> on GitHub
+  
+  <script type="text/javascript">
+    $(document).ready(function(){
+        if (!window.jXHR){
+            var jxhr = document.createElement('script');
+            jxhr.type = 'text/javascript';
+            jxhr.src = '/javascripts/libs/jXHR.js';
+            var s = document.getElementsByTagName('script')[0];
+            s.parentNode.insertBefore(jxhr, s);
+        }
+
+        github.showRepos({
+            user: 'iwebhosting',
+            count: 10,
+            skip_forks: true,
+            target: '#gh_repos'
+        });
+    });
+  </script>
+  <script src="/javascripts/github.js" type="text/javascript"> </script>
+</section>
+
+
+
+
+
+  
+</aside>
+
+
+    </div>
+  </div>
+  <footer role="contentinfo"><p>
+  Copyright &copy; 2013 - iWeb Hosting -
+  <span class="credit">Powered by <a href="http://octopress.org">Octopress</a></span>
+</p>
+
+</footer>
+  
+
+
+
+
+
+  <script type="text/javascript">
+    (function() {
+      var script = document.createElement('script'); script.type = 'text/javascript'; script.async = true;
+      script.src = 'https://apis.google.com/js/plusone.js';
+      var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(script, s);
+    })();
+  </script>
+
+
+
+  <script type="text/javascript">
+    (function(){
+      var twitterWidgets = document.createElement('script');
+      twitterWidgets.type = 'text/javascript';
+      twitterWidgets.async = true;
+      twitterWidgets.src = 'http://platform.twitter.com/widgets.js';
+      document.getElementsByTagName('head')[0].appendChild(twitterWidgets);
+    })();
+  </script>
+
+
+
+
+
+</body>
+</html>

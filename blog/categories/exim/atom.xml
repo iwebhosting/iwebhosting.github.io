@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+
+  <title><![CDATA[Category: Exim | iWeb Hosting]]></title>
+  <link href="http://blog.iweb-hosting.co.uk/blog/categories/exim/atom.xml" rel="self"/>
+  <link href="http://blog.iweb-hosting.co.uk/"/>
+  <updated>2013-06-06T22:29:59+01:00</updated>
+  <id>http://blog.iweb-hosting.co.uk/</id>
+  <author>
+    <name><![CDATA[iWeb Hosting]]></name>
+    
+  </author>
+  <generator uri="http://octopress.org/">Octopress</generator>
+
+  
+  <entry>
+    <title type="html"><![CDATA[Forcing Exim Local Delivery on Ubuntu (For Development)]]></title>
+    <link href="http://blog.iweb-hosting.co.uk/blog/2013/06/06/forcing-exim-local-delivery-on-ubuntu-for-development/"/>
+    <updated>2013-06-06T17:16:00+01:00</updated>
+    <id>http://blog.iweb-hosting.co.uk/blog/2013/06/06/forcing-exim-local-delivery-on-ubuntu-for-development</id>
+    <content type="html"><![CDATA[<p>Sometimes you want to run development code against your production database before it goes live, as a test, but want to make sure that there are no side effects from this process.</p>
+
+<p>Recently a developer at iWeb wanted to test some email code&rsquo;s interaction with a real mail server, without potentially mailing thousands of real customers. Mocks wouldn&rsquo;t be suitable because the tests cross the API boundary; it&rsquo;s not enough to know it&rsquo;s called, they needed to see what it <em>did</em>.</p>
+
+<!--more-->
+
+
+<h4>Installing Exim</h4>
+
+<p>If you don&rsquo;t already have Exim installed, just install <code>exim4-daemon-light</code>. When Debconf asks you for the configuration type, you want &ldquo;Local Delivery Only&rdquo;:</p>
+
+<p><img src="http://17k.co.uk/s/09207fc6.png" alt="Local delivery" /></p>
+
+<p>Select what you want for the next three dialogs, and you <em>do</em> want to split configuration into small files:</p>
+
+<p><img src="http://17k.co.uk/s/91ffcd4b.png" alt="Small files, please" /></p>
+
+<p>Now, create the file <code>/etc/exim4/conf.d/router/050_force_local_delivery</code> with the following contents:</p>
+
+<pre><code>forced:
+  debug_print = "R: forced for $local_part@$domain"
+  driver = redirect
+  allow_fail
+  allow_defer
+  data = "iweb" # change this to a local user on your machine
+</code></pre>
+
+<p>Update your config and restart Exim:</p>
+
+<pre><code># update-exim4.conf
+# /etc/init.d/exim4 restart
+</code></pre>
+
+<p>Putting it in as &ldquo;050&rdquo; means that this will fire before the <code>nonlocal</code> router, which is in <code>200_exim4-config_primary</code>. If you see the error &ldquo;Mailing to remote domains not supported&rdquo;, check that your file is named correctly and that you ran <code>update-exim4.conf</code> and restarted Exim.</p>
+
+<p>And then give it a test:</p>
+
+<pre><code># mail anyone@anywhere.com &lt; /dev/null
+No message, no subject; hope that's ok
+# tail -3 /var/log/exim4/mainlog
+2013-06-06 17:36:32 1UkdAu-0000b5-3y &lt;= root@test.iweb U=root P=local S=338
+2013-06-06 17:36:32 1UkdAu-0000b5-3y =&gt; iweb &lt;anyone@anywhere.com&gt; R=local_user T=maildir_home
+2013-06-06 17:36:32 1UkdAu-0000b5-3y Completed
+</code></pre>
+
+<p>&nbsp;</p>
+
+<p>If you&rsquo;ve found this useful, please let me know on Twitter via <a href="http://twitter.com/insom">@insom</a>.</p>
+]]></content>
+  </entry>
+  
+</feed>

@@ -1,0 +1,493 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+
+  <title><![CDATA[Category: Apache | iWeb Hosting]]></title>
+  <link href="http://blog.iweb-hosting.co.uk/blog/categories/apache/atom.xml" rel="self"/>
+  <link href="http://blog.iweb-hosting.co.uk/"/>
+  <updated>2013-06-06T22:29:59+01:00</updated>
+  <id>http://blog.iweb-hosting.co.uk/</id>
+  <author>
+    <name><![CDATA[iWeb Hosting]]></name>
+    
+  </author>
+  <generator uri="http://octopress.org/">Octopress</generator>
+
+  
+  <entry>
+    <title type="html"><![CDATA[Lunchtime Project: Apache Space Core Module]]></title>
+    <link href="http://blog.iweb-hosting.co.uk/blog/2012/02/08/lunchtime-project-apache-space-core-module/"/>
+    <updated>2012-02-08T21:08:00+00:00</updated>
+    <id>http://blog.iweb-hosting.co.uk/blog/2012/02/08/lunchtime-project-apache-space-core-module</id>
+    <content type="html"><![CDATA[<p>Show and tell time!</p>
+
+<p><a href="http://twitter.com/DazWorrall">Darren</a> mentioned in passing how we should return quotes in the HTTP
+responses for our new product. <a href="http://keithdevens.com/weblog/archive/2002/Jul/20/FuturamaQuotesHTTPHeaders">Slashdot already does this</a> with
+Futurama quotes, and it didn&rsquo;t take long to add support for the main WSGI
+application, but in the interests of security the public-facing website doesn&rsquo;t
+run any dynamic languages; no Python, no PHP.</p>
+
+<!--more-->
+
+
+<p>I investigated using <a href="http://httpd.apache.org/docs/current/mod/mod_headers.html">mod_headers</a> and the <a href="http://httpd.apache.org/docs/current/mod/mod_rewrite.html#rewritemap">RewriteMap</a> functionality of
+<a href="http://httpd.apache.org/docs/current/mod/mod_rewrite.html">mod_rewrite</a>, but even if that <em>would</em> work the random selection built
+into RewriteMap requires that all of the quotes be on one line. Unfortunately,
+in our case <a href="http://theportalwiki.com/wiki/Core_voice_lines#Space_core_lines">the source material</a> is 88 lines long.</p>
+
+<p>So, on a box with just Apache, there&rsquo;s just one reasonable choice: learn how to
+write Apache modules. <a href="http://stderr.net/apache/rpaf/">mod_rpaf</a> is just about the simplest module I
+know of. It tweaks the inbound headers with code like this:</p>
+
+<p><div class='bogus-wrapper'><notextile><figure class='code'><figcaption><span>&ldquo;Add X-Forwarded-For&rdquo; </span></figcaption>
+ <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+</pre></td><td class='code'><pre><code class='c'><span class='line'><span class="k">if</span> <span class="p">(</span><span class="n">is_in_array</span><span class="p">(</span><span class="n">r</span><span class="o">-&gt;</span><span class="n">connection</span><span class="o">-&gt;</span><span class="n">remote_ip</span><span class="p">,</span> <span class="n">cfg</span><span class="o">-&gt;</span><span class="n">proxy_ips</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>  <span class="k">if</span> <span class="p">(</span><span class="n">fwdvalue</span> <span class="o">=</span> <span class="n">apr_table_get</span><span class="p">(</span><span class="n">r</span><span class="o">-&gt;</span><span class="n">headers_in</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">ldquo</span><span class="p">;</span><span class="n">X</span><span class="o">-</span><span class="n">Forwarded</span><span class="o">-</span><span class="n">For</span><span class="o">&amp;</span><span class="n">rdquo</span><span class="p">;))</span> <span class="p">{</span><span class="o">&lt;/</span><span class="n">p</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">pre</span><span class="o">&gt;&lt;</span><span class="n">code</span><span class="o">&gt;</span><span class="n">apr_array_header_t</span> <span class="o">*</span><span class="n">arr</span> <span class="o">=</span> <span class="n">apr_array_make</span><span class="p">(</span><span class="n">r</span><span class="o">-&amp;</span><span class="n">gt</span><span class="p">;</span><span class="n">pool</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="k">sizeof</span><span class="p">(</span><span class="kt">char</span><span class="o">*</span><span class="p">));</span>
+</span><span class='line'><span class="o">&lt;/</span><span class="n">code</span><span class="o">&gt;&lt;/</span><span class="n">pre</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div></p>
+
+<p>Building and installing a standalone module is incredibly simple if you have
+the apache2.2-dev package installed (or equivalent for your distribution):</p>
+
+<pre><code>apxs2 -i -a -c *.c
+echo "LoadModule rpaf_module /usr/lib/apache2/modules/mod_rpaf.so" &gt;&gt; /etc/apache2/httpd.conf
+</code></pre>
+
+<p>Lets look at the major parts:</p>
+
+<p><div class='bogus-wrapper'><notextile><figure class='code'><figcaption><span>&ldquo;Boilerplate Config&rdquo; </span></figcaption>
+ <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+</pre></td><td class='code'><pre><code class='c'><span class='line'><span class="n">module</span> <span class="n">AP_MODULE_DECLARE_DATA</span> <span class="n">rpaf_module</span><span class="p">;</span><span class="o">&lt;/</span><span class="n">p</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;</span><span class="k">typedef</span> <span class="k">struct</span> <span class="p">{</span><span class="o">&lt;/</span><span class="n">p</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">pre</span><span class="o">&gt;&lt;</span><span class="n">code</span><span class="o">&gt;</span><span class="kt">int</span> <span class="n">enable</span><span class="p">;</span>
+</span><span class='line'><span class="kt">int</span> <span class="n">sethostname</span><span class="p">;</span>
+</span><span class='line'><span class="n">apr_array_header_t</span> <span class="o">*</span><span class="n">proxy_ips</span><span class="p">;</span>
+</span><span class='line'><span class="o">&lt;/</span><span class="n">code</span><span class="o">&gt;&lt;/</span><span class="n">pre</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;</span><span class="p">}</span> <span class="n">rpaf_server_cfg</span><span class="p">;</span><span class="o">&lt;/</span><span class="n">p</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;</span><span class="k">static</span> <span class="kt">void</span> <span class="o">&lt;</span><span class="n">em</span><span class="o">&gt;</span><span class="n">rpaf_create_server_cfg</span><span class="p">(</span><span class="n">apr_pool_t</span> <span class="o">&lt;/</span><span class="n">em</span><span class="o">&gt;</span><span class="n">p</span><span class="p">,</span> <span class="n">server_rec</span> <span class="o">*</span><span class="n">s</span><span class="p">)</span> <span class="p">{</span><span class="o">&lt;/</span><span class="n">p</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">pre</span><span class="o">&gt;&lt;</span><span class="n">code</span><span class="o">&gt;</span><span class="n">rpaf_server_cfg</span> <span class="o">*</span><span class="n">cfg</span> <span class="o">=</span> <span class="p">(</span><span class="n">rpaf_server_cfg</span> <span class="o">*</span><span class="p">)</span><span class="n">apr_pcalloc</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="k">sizeof</span><span class="p">(</span><span class="n">rpaf_server_cfg</span><span class="p">));</span>
+</span><span class='line'><span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">cfg</span><span class="p">)</span>
+</span><span class='line'>    <span class="k">return</span> <span class="nb">NULL</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">cfg</span><span class="o">-&amp;</span><span class="n">gt</span><span class="p">;</span><span class="n">proxy_ips</span> <span class="o">=</span> <span class="n">apr_array_make</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="k">sizeof</span><span class="p">(</span><span class="kt">char</span> <span class="o">*</span><span class="p">));</span>
+</span><span class='line'><span class="n">cfg</span><span class="o">-&amp;</span><span class="n">gt</span><span class="p">;</span><span class="n">enable</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+</span><span class='line'><span class="n">cfg</span><span class="o">-&amp;</span><span class="n">gt</span><span class="p">;</span><span class="n">sethostname</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">return</span> <span class="p">(</span><span class="kt">void</span> <span class="o">*</span><span class="p">)</span><span class="n">cfg</span><span class="p">;</span>
+</span><span class='line'><span class="o">&lt;/</span><span class="n">code</span><span class="o">&gt;&lt;/</span><span class="n">pre</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;</span><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div></p>
+
+<p>Seems reasonable, we define a one-off struct, allocate it in the server config
+callback and set some defaults. The RPAF code uses and apr_array, but they&rsquo;re
+not the easiest thing to iterate over, according to some <a href="http://dev.ariel-networks.com/apr/apr-tutorial/html/apr-tutorial-19.html">APR tutorial</a> that
+I found. However, a <a href="http://dev.ariel-networks.com/apr/apr-tutorial/html/apr-tutorial-19.html#ss19.4">ring</a> looks ideal: we can loop over it any random amount
+and be confident that we won&rsquo;t walk off of the end, so we don&rsquo;t even need to
+keep a count of how many items are in it. (Though, we do)</p>
+
+<p><div class='bogus-wrapper'><notextile><figure class='code'><figcaption><span>&ldquo;Initialisation, Callbacks&rdquo; </span></figcaption>
+ <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+</pre></td><td class='code'><pre><code class='c'><span class='line'><span class="k">static</span> <span class="k">const</span> <span class="n">command_rec</span> <span class="n">rpaf_cmds</span><span class="p">[]</span> <span class="o">=</span> <span class="p">{</span><span class="o">&lt;/</span><span class="n">p</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">pre</span><span class="o">&gt;&lt;</span><span class="n">code</span><span class="o">&gt;</span><span class="c1">// SNIP - Aaron</span>
+</span><span class='line'><span class="n">AP_INIT_ITERATE</span><span class="p">(</span>
+</span><span class='line'>                <span class="s">&quot;RPAFproxy_ips&quot;</span><span class="p">,</span>
+</span><span class='line'>                <span class="n">rpaf_set_proxy_ip</span><span class="p">,</span>
+</span><span class='line'>                <span class="nb">NULL</span><span class="p">,</span>
+</span><span class='line'>                <span class="n">RSRC_CONF</span><span class="p">,</span>
+</span><span class='line'>                <span class="s">&quot;IP(s) of Proxy server setting X-Forwarded-For header&quot;</span>
+</span><span class='line'>                <span class="p">),</span>
+</span><span class='line'><span class="p">{</span> <span class="nb">NULL</span> <span class="p">}</span>
+</span><span class='line'><span class="o">&lt;/</span><span class="n">code</span><span class="o">&gt;&lt;/</span><span class="n">pre</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;</span><span class="p">};</span><span class="o">&lt;/</span><span class="n">p</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;</span><span class="k">static</span> <span class="kt">void</span> <span class="n">register_hooks</span><span class="p">(</span><span class="n">apr_pool_t</span> <span class="o">*</span><span class="n">p</span><span class="p">)</span> <span class="p">{</span><span class="o">&lt;/</span><span class="n">p</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">pre</span><span class="o">&gt;&lt;</span><span class="n">code</span><span class="o">&gt;</span><span class="n">ap_hook_post_read_request</span><span class="p">(</span><span class="n">change_remote_ip</span><span class="p">,</span> <span class="nb">NULL</span><span class="p">,</span> <span class="nb">NULL</span><span class="p">,</span> <span class="n">APR_HOOK_MIDDLE</span><span class="p">);</span>
+</span><span class='line'><span class="o">&lt;/</span><span class="n">code</span><span class="o">&gt;&lt;/</span><span class="n">pre</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;</span><span class="p">}</span><span class="o">&lt;/</span><span class="n">p</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;</span><span class="n">module</span> <span class="n">AP_MODULE_DECLARE_DATA</span> <span class="n">rpaf_module</span> <span class="o">=</span> <span class="p">{</span><span class="o">&lt;/</span><span class="n">p</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">pre</span><span class="o">&gt;&lt;</span><span class="n">code</span><span class="o">&gt;</span><span class="n">STANDARD20_MODULE_STUFF</span><span class="p">,</span>
+</span><span class='line'><span class="nb">NULL</span><span class="p">,</span>
+</span><span class='line'><span class="nb">NULL</span><span class="p">,</span>
+</span><span class='line'><span class="n">rpaf_create_server_cfg</span><span class="p">,</span>
+</span><span class='line'><span class="nb">NULL</span><span class="p">,</span>
+</span><span class='line'><span class="n">rpaf_cmds</span><span class="p">,</span>
+</span><span class='line'><span class="n">register_hooks</span><span class="p">,</span>
+</span><span class='line'><span class="o">&lt;/</span><span class="n">code</span><span class="o">&gt;&lt;/</span><span class="n">pre</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;</span><span class="p">};</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div></p>
+
+<p>Okay, everything&rsquo;s still reasonable with this, we&rsquo;re providing an array of
+configuration directives and respective callbacks, a function that gets called
+to register some hooks, and a struct that gets read when the module is
+<code>dlopen()</code>ed pointing to these things.</p>
+
+<p>Our versions of these:</p>
+
+<p><div class='bogus-wrapper'><notextile><figure class='code'><figcaption><span>&ldquo;Ring structure and Config structure&rdquo; </span></figcaption>
+ <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+</pre></td><td class='code'><pre><code class='c'><span class='line'><span class="k">typedef</span> <span class="k">struct</span> <span class="n">_quote_t</span> <span class="p">{</span><span class="o">&lt;/</span><span class="n">p</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">pre</span><span class="o">&gt;&lt;</span><span class="n">code</span><span class="o">&gt;</span><span class="n">APR_RING_ENTRY</span><span class="p">(</span><span class="n">_quote_t</span><span class="p">)</span> <span class="n">link</span><span class="p">;</span>
+</span><span class='line'><span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">quote</span><span class="p">;</span>
+</span><span class='line'><span class="o">&lt;/</span><span class="n">code</span><span class="o">&gt;&lt;/</span><span class="n">pre</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;</span><span class="p">}</span> <span class="n">quote_t</span><span class="p">;</span><span class="o">&lt;/</span><span class="n">p</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;</span><span class="k">typedef</span> <span class="k">struct</span> <span class="o">&lt;</span><span class="n">em</span><span class="o">&gt;</span><span class="n">quote_ring_t</span> <span class="n">quote_ring_t</span><span class="p">;</span>
+</span><span class='line'><span class="n">APR_RING_HEAD</span><span class="p">(</span><span class="o">&lt;/</span><span class="n">em</span><span class="o">&gt;</span><span class="n">quote_ring_t</span><span class="p">,</span> <span class="n">_quote_t</span><span class="p">);</span><span class="o">&lt;/</span><span class="n">p</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;</span><span class="n">module</span> <span class="n">AP_MODULE_DECLARE_DATA</span> <span class="n">space_core_module</span><span class="p">;</span><span class="o">&lt;/</span><span class="n">p</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;</span><span class="k">typedef</span> <span class="k">struct</span> <span class="p">{</span><span class="o">&lt;/</span><span class="n">p</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">pre</span><span class="o">&gt;&lt;</span><span class="n">code</span><span class="o">&gt;</span><span class="n">quote_ring_t</span> <span class="o">*</span><span class="n">ring</span><span class="p">;</span>
+</span><span class='line'><span class="kt">int</span> <span class="n">count</span><span class="p">;</span>
+</span><span class='line'><span class="o">&lt;/</span><span class="n">code</span><span class="o">&gt;&lt;/</span><span class="n">pre</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;</span><span class="p">}</span> <span class="n">space_core_server_cfg</span><span class="p">;</span><span class="o">&lt;/</span><span class="n">p</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;</span><span class="k">static</span> <span class="kt">void</span> <span class="o">&lt;</span><span class="n">em</span><span class="o">&gt;</span><span class="n">space_core_create_server_cfg</span><span class="p">(</span><span class="n">apr_pool_t</span> <span class="o">&lt;/</span><span class="n">em</span><span class="o">&gt;</span><span class="n">p</span><span class="p">,</span> <span class="n">server_rec</span> <span class="o">*</span><span class="n">s</span><span class="p">)</span> <span class="p">{</span><span class="o">&lt;/</span><span class="n">p</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">pre</span><span class="o">&gt;&lt;</span><span class="n">code</span><span class="o">&gt;</span><span class="n">space_core_server_cfg</span> <span class="o">*</span><span class="n">cfg</span> <span class="o">=</span> <span class="p">(</span><span class="n">space_core_server_cfg</span> <span class="o">*</span><span class="p">)</span><span class="n">apr_pcalloc</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="k">sizeof</span><span class="p">(</span><span class="n">space_core_server_cfg</span><span class="p">));</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">cfg</span><span class="p">)</span>
+</span><span class='line'>    <span class="k">return</span> <span class="nb">NULL</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">cfg</span><span class="o">-&amp;</span><span class="n">gt</span><span class="p">;</span><span class="n">ring</span> <span class="o">=</span> <span class="n">apr_palloc</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="k">sizeof</span><span class="p">(</span><span class="n">quote_ring_t</span><span class="p">));</span>
+</span><span class='line'><span class="n">cfg</span><span class="o">-&amp;</span><span class="n">gt</span><span class="p">;</span><span class="n">count</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+</span><span class='line'><span class="n">APR_RING_INIT</span><span class="p">(</span><span class="n">cfg</span><span class="o">-&amp;</span><span class="n">gt</span><span class="p">;</span><span class="n">ring</span><span class="p">,</span> <span class="n">_quote_t</span><span class="p">,</span> <span class="n">link</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">return</span> <span class="p">(</span><span class="kt">void</span> <span class="o">*</span><span class="p">)</span><span class="n">cfg</span><span class="p">;</span>
+</span><span class='line'><span class="o">&lt;/</span><span class="n">code</span><span class="o">&gt;&lt;/</span><span class="n">pre</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;</span><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div></p>
+
+<p><code>quote_ring_t</code> will be the container for a bunch of <code>quote_t</code>s which themselves
+include a pointer to their next link and a string (for the quote).
+<code>space_core_server_cfg</code> will be just a count of the number of quotes and the
+ring structure itself. Suitable macro hackery is going on under <code>APR_RING_INIT</code>
+&ndash; I don&rsquo;t even <em>want</em> to know what.</p>
+
+<p><div class='bogus-wrapper'><notextile><figure class='code'><figcaption><span>&ldquo;Configuration and Initialisation&rdquo; </span></figcaption>
+ <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+</pre></td><td class='code'><pre><code class='c'><span class='line'><span class="k">static</span> <span class="k">const</span> <span class="n">command_rec</span> <span class="n">space_core_cmds</span><span class="p">[]</span> <span class="o">=</span> <span class="p">{</span><span class="o">&lt;/</span><span class="n">p</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">pre</span><span class="o">&gt;&lt;</span><span class="n">code</span><span class="o">&gt;</span><span class="n">AP_INIT_TAKE1</span><span class="p">(</span>
+</span><span class='line'>                <span class="s">&quot;SpaceCoreFile&quot;</span><span class="p">,</span>
+</span><span class='line'>                <span class="n">space_core_file</span><span class="p">,</span>
+</span><span class='line'>                <span class="nb">NULL</span><span class="p">,</span>
+</span><span class='line'>                <span class="n">RSRC_CONF</span><span class="p">,</span>
+</span><span class='line'>                <span class="s">&quot;Location of Quotes File&quot;</span>
+</span><span class='line'>                <span class="p">),</span>
+</span><span class='line'><span class="p">{</span> <span class="nb">NULL</span> <span class="p">}</span>
+</span><span class='line'><span class="o">&lt;/</span><span class="n">code</span><span class="o">&gt;&lt;/</span><span class="n">pre</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;</span><span class="p">};</span><span class="o">&lt;/</span><span class="n">p</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;</span><span class="k">static</span> <span class="kt">void</span> <span class="n">register_hooks</span><span class="p">(</span><span class="n">apr_pool_t</span> <span class="o">*</span><span class="n">p</span><span class="p">)</span> <span class="p">{</span><span class="o">&lt;/</span><span class="n">p</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">pre</span><span class="o">&gt;&lt;</span><span class="n">code</span><span class="o">&gt;</span><span class="n">ap_hook_fixups</span><span class="p">(</span><span class="n">ap_headers_fixup</span><span class="p">,</span> <span class="nb">NULL</span><span class="p">,</span> <span class="nb">NULL</span><span class="p">,</span> <span class="n">APR_HOOK_LAST</span><span class="p">);</span>
+</span><span class='line'><span class="o">&lt;/</span><span class="n">code</span><span class="o">&gt;&lt;/</span><span class="n">pre</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;</span><span class="p">}</span><span class="o">&lt;/</span><span class="n">p</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;</span><span class="n">module</span> <span class="n">AP_MODULE_DECLARE_DATA</span> <span class="n">space_core_module</span> <span class="o">=</span> <span class="p">{</span><span class="o">&lt;/</span><span class="n">p</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">pre</span><span class="o">&gt;&lt;</span><span class="n">code</span><span class="o">&gt;</span><span class="n">STANDARD20_MODULE_STUFF</span><span class="p">,</span>
+</span><span class='line'><span class="nb">NULL</span><span class="p">,</span>
+</span><span class='line'><span class="nb">NULL</span><span class="p">,</span>
+</span><span class='line'><span class="n">space_core_create_server_cfg</span><span class="p">,</span>
+</span><span class='line'><span class="nb">NULL</span><span class="p">,</span>
+</span><span class='line'><span class="n">space_core_cmds</span><span class="p">,</span>
+</span><span class='line'><span class="n">register_hooks</span><span class="p">,</span>
+</span><span class='line'><span class="o">&lt;/</span><span class="n">code</span><span class="o">&gt;&lt;/</span><span class="n">pre</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;</span><span class="p">};</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div></p>
+
+<p>This is a fairly straight swap: lots of things and renamed to <code>space_core</code>, the
+hook we register is <code>ap_hook_fixups</code>, a suitable place to manipulate the
+response. The possible hooks are documented <a href="http://httpd.apache.org/docs/2.0/developer/modules.html#messy">in this guide</a>. We defined
+just one parameter <code>SpaceCoreFile</code> which should be the absolute filename of the
+quotes file.</p>
+
+<p>We&rsquo;re using <code>AP_INIT_TAKE1</code> instead of <code>AP_INIT_ITERATE</code>; this is because
+mod_rpaf takes a list of IPs, but we really just want one filename. This is
+expanded on <a href="http://www.apachetutor.org/dev/config">in this Apache tutorial</a> (wow, remember webpages like this?).</p>
+
+<h2>The good stuff!</h2>
+
+<p>Most of this has been fairly boilerplate, this is where the (admittedly small)
+magic happens:</p>
+
+<p><div class='bogus-wrapper'><notextile><figure class='code'><figcaption><span>&ldquo;Load the File in&rdquo; </span></figcaption>
+ <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+</pre></td><td class='code'><pre><code class='c'><span class='line'><span class="k">static</span> <span class="k">const</span> <span class="kt">char</span> <span class="o">&lt;</span><span class="n">em</span><span class="o">&gt;</span><span class="n">space_core_file</span><span class="p">(</span><span class="n">cmd_parms</span> <span class="o">&lt;/</span><span class="n">em</span><span class="o">&gt;</span><span class="n">cmd</span><span class="p">,</span> <span class="kt">void</span> <span class="o">&lt;</span><span class="n">em</span><span class="o">&gt;</span><span class="n">dummy</span><span class="p">,</span> <span class="kt">char</span> <span class="o">&lt;/</span><span class="n">em</span><span class="o">&gt;</span><span class="n">filename</span><span class="p">)</span> <span class="p">{</span><span class="o">&lt;/</span><span class="n">p</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">pre</span><span class="o">&gt;&lt;</span><span class="n">code</span><span class="o">&gt;</span><span class="n">server_rec</span> <span class="o">*</span><span class="n">s</span> <span class="o">=</span> <span class="n">cmd</span><span class="o">-&amp;</span><span class="n">gt</span><span class="p">;</span><span class="n">server</span><span class="p">;</span>
+</span><span class='line'><span class="n">space_core_server_cfg</span> <span class="o">*</span><span class="n">cfg</span> <span class="o">=</span> <span class="p">(</span><span class="n">space_core_server_cfg</span> <span class="o">*</span><span class="p">)</span><span class="n">ap_get_module_config</span><span class="p">(</span><span class="n">s</span><span class="o">-&amp;</span><span class="n">gt</span><span class="p">;</span><span class="n">module_config</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">amp</span><span class="p">;</span><span class="n">space_core_module</span><span class="p">);</span>
+</span><span class='line'><span class="kt">char</span> <span class="n">buf</span><span class="p">[</span><span class="mi">1024</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="mi">0</span><span class="p">};</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">apr_file_t</span> <span class="o">*</span><span class="n">fd</span><span class="p">;</span>
+</span><span class='line'><span class="n">apr_file_open</span><span class="p">(</span><span class="o">&amp;</span><span class="n">amp</span><span class="p">;</span><span class="n">fd</span><span class="p">,</span> <span class="n">filename</span><span class="p">,</span> <span class="n">APR_READ</span><span class="p">,</span> <span class="n">APR_OS_DEFAULT</span><span class="p">,</span> <span class="n">cmd</span><span class="o">-&amp;</span><span class="n">gt</span><span class="p">;</span><span class="n">pool</span><span class="p">);</span>
+</span><span class='line'><span class="k">while</span><span class="p">(</span><span class="n">APR_EOF</span> <span class="o">!=</span> <span class="n">apr_file_gets</span><span class="p">(</span><span class="n">buf</span><span class="p">,</span> <span class="mi">1024</span><span class="p">,</span> <span class="n">fd</span><span class="p">))</span> <span class="p">{</span>
+</span><span class='line'>    <span class="k">if</span><span class="p">(</span><span class="n">strlen</span><span class="p">(</span><span class="n">buf</span><span class="p">)</span> <span class="o">&amp;</span><span class="n">gt</span><span class="p">;</span> <span class="mi">1</span><span class="p">)</span> <span class="p">{</span>
+</span><span class='line'>        <span class="n">buf</span><span class="p">[</span><span class="n">strlen</span><span class="p">(</span><span class="n">buf</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="sc">&#39;\0&#39;</span><span class="p">;</span>
+</span><span class='line'>        <span class="n">quote_t</span> <span class="o">*</span><span class="n">elem</span> <span class="o">=</span> <span class="n">apr_palloc</span><span class="p">(</span><span class="n">cmd</span><span class="o">-&amp;</span><span class="n">gt</span><span class="p">;</span><span class="n">pool</span><span class="p">,</span> <span class="k">sizeof</span><span class="p">(</span><span class="n">quote_t</span><span class="p">));</span>
+</span><span class='line'>        <span class="n">elem</span><span class="o">-&amp;</span><span class="n">gt</span><span class="p">;</span><span class="n">quote</span> <span class="o">=</span> <span class="n">apr_pstrdup</span><span class="p">(</span><span class="n">cmd</span><span class="o">-&amp;</span><span class="n">gt</span><span class="p">;</span><span class="n">pool</span><span class="p">,</span> <span class="n">buf</span><span class="p">);</span>
+</span><span class='line'>        <span class="n">APR_RING_INSERT_TAIL</span><span class="p">(</span><span class="n">cfg</span><span class="o">-&amp;</span><span class="n">gt</span><span class="p">;</span><span class="n">ring</span><span class="p">,</span> <span class="n">elem</span><span class="p">,</span> <span class="n">_quote_t</span><span class="p">,</span> <span class="n">link</span><span class="p">);</span>
+</span><span class='line'>        <span class="n">cfg</span><span class="o">-&amp;</span><span class="n">gt</span><span class="p">;</span><span class="n">count</span><span class="o">++</span><span class="p">;</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'><span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">return</span> <span class="nb">NULL</span><span class="p">;</span>
+</span><span class='line'><span class="o">&lt;/</span><span class="n">code</span><span class="o">&gt;&lt;/</span><span class="n">pre</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;</span><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div></p>
+
+<p>We&rsquo;ll create a staticly allocated buffer, filled with NULs. We&rsquo;ll trust that
+the filename is good, because I don&rsquo;t check any return values. <code>apr_file_gets</code>
+is a portable version of <code>fgets</code> which respects maxium lengths.</p>
+
+<p>If the line has more than one character in it (including the newline, so
+essentially: if it&rsquo;s not blank) then we strip off the trailing newline,
+duplicate the string and add it to a fresh <code>quote_t</code> structure.</p>
+
+<p><code>APR_RING_INSERT_TAIL</code> does some more magic macro work to expand the ring with
+the new element, and we increment the quote count.</p>
+
+<p>Pulling a quote out should be a simple case of picking a random number,
+advancing through the ring a few times and then setting it in the response:</p>
+
+<p><div class='bogus-wrapper'><notextile><figure class='code'><figcaption><span>&ldquo;Set the Header&rdquo; </span></figcaption>
+ <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+</pre></td><td class='code'><pre><code class='c'><span class='line'><span class="k">static</span> <span class="kt">int</span> <span class="nf">ap_headers_fixup</span><span class="p">(</span><span class="n">request_rec</span> <span class="o">*</span><span class="n">r</span><span class="p">)</span> <span class="p">{</span><span class="o">&lt;/</span><span class="n">p</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">pre</span><span class="o">&gt;&lt;</span><span class="n">code</span><span class="o">&gt;</span><span class="n">space_core_server_cfg</span> <span class="o">*</span><span class="n">cfg</span> <span class="o">=</span> <span class="p">(</span><span class="n">space_core_server_cfg</span> <span class="o">*</span><span class="p">)</span><span class="n">ap_get_module_config</span><span class="p">(</span><span class="n">r</span><span class="o">-&amp;</span><span class="n">gt</span><span class="p">;</span><span class="n">server</span><span class="o">-&amp;</span><span class="n">gt</span><span class="p">;</span><span class="n">module_config</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">amp</span><span class="p">;</span><span class="n">space_core_module</span><span class="p">);</span>
+</span><span class='line'><span class="kt">int</span> <span class="n">rand</span> <span class="o">=</span> <span class="n">random</span><span class="p">()</span> <span class="o">%</span> <span class="n">cfg</span><span class="o">-&amp;</span><span class="n">gt</span><span class="p">;</span><span class="n">count</span><span class="p">;</span>
+</span><span class='line'><span class="n">quote_t</span><span class="o">*</span> <span class="n">elem</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">for</span><span class="p">(</span><span class="n">elem</span> <span class="o">=</span> <span class="n">APR_RING_FIRST</span><span class="p">(</span><span class="n">cfg</span><span class="o">-&amp;</span><span class="n">gt</span><span class="p">;</span><span class="n">ring</span><span class="p">);</span> <span class="n">elem</span> <span class="o">&amp;</span><span class="n">amp</span><span class="p">;</span><span class="o">&amp;</span><span class="n">amp</span><span class="p">;</span> <span class="n">rand</span><span class="p">;</span> <span class="n">elem</span> <span class="o">=</span> <span class="n">APR_RING_NEXT</span><span class="p">(</span><span class="n">elem</span><span class="p">,</span> <span class="n">link</span><span class="p">))</span>
+</span><span class='line'>    <span class="n">rand</span><span class="o">--</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">if</span><span class="p">(</span><span class="n">elem</span><span class="p">)</span>
+</span><span class='line'>    <span class="n">apr_table_set</span><span class="p">(</span><span class="n">r</span><span class="o">-&amp;</span><span class="n">gt</span><span class="p">;</span><span class="n">headers_out</span><span class="p">,</span> <span class="s">&quot;X-Space-Core&quot;</span><span class="p">,</span> <span class="n">elem</span><span class="o">-&amp;</span><span class="n">gt</span><span class="p">;</span><span class="n">quote</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">return</span> <span class="n">DECLINED</span><span class="p">;</span>
+</span><span class='line'><span class="o">&lt;/</span><span class="n">code</span><span class="o">&gt;&lt;/</span><span class="n">pre</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;</span><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure></notextile></div></p>
+
+<p>And that&rsquo;s it! There&rsquo;s a <a href="https://gist.github.com/1774452">gist with the finished code</a> with the whole
+file, and I&rsquo;ve packaged it up (for fun) <a href="https://launchpad.net/~bradya/+archive/space-core/">as a .deb for Ubuntu Lucid</a> &ndash; just</p>
+
+<pre><code>apt-get install libapache2-mod-space-core
+a2enmod space_core
+/etc/init.d/apache2 reload
+</code></pre>
+
+<p>and you&rsquo;re done!</p>
+
+<pre><code>$ curl -I http://localhost/
+HTTP/1.1 200 OK
+Date: Wed, 08 Feb 2012 22:17:04 GMT
+Server: Apache/2.2.14 (Ubuntu)
+X-Space-Core: What’s your favorite thing about space? Mine is space.
+Last-Modified: Tue, 07 Feb 2012 22:18:12 GMT
+ETag: "124bde-b1-4b867279581c1"
+</code></pre>
+
+<p>This could easily be rounded out as a generate quotes module with a few more
+configuration directives: if you&rsquo;ve found this useful, please let me know
+on Twitter via <a href="http://twitter.com/insom">@insom</a></p>
+
+<p><img src="http://i0.kym-cdn.com/photos/images/original/000/118/802/halolz-dot-com-portal2-nyancatspacecore.gif" alt="Nyan Core" /></p>
+]]></content>
+  </entry>
+  
+</feed>

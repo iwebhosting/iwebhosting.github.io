@@ -1,0 +1,323 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+
+  <title><![CDATA[Category: BGP | iWeb Hosting]]></title>
+  <link href="http://blog.iweb-hosting.co.uk/blog/categories/bgp/atom.xml" rel="self"/>
+  <link href="http://blog.iweb-hosting.co.uk/"/>
+  <updated>2013-06-06T22:29:59+01:00</updated>
+  <id>http://blog.iweb-hosting.co.uk/</id>
+  <author>
+    <name><![CDATA[iWeb Hosting]]></name>
+    
+  </author>
+  <generator uri="http://octopress.org/">Octopress</generator>
+
+  
+  <entry>
+    <title type="html"><![CDATA[Using BGP to serve High-Availability DNS]]></title>
+    <link href="http://blog.iweb-hosting.co.uk/blog/2012/01/27/using-bgp-to-serve-high-availability-dns/"/>
+    <updated>2012-01-27T22:48:00+00:00</updated>
+    <id>http://blog.iweb-hosting.co.uk/blog/2012/01/27/using-bgp-to-serve-high-availability-dns</id>
+    <content type="html"><![CDATA[<p>Routing protocols, like BGP and OSPF, can be used for more than just
+establishing connectivity. The best-known example of this is probably using BGP
+to blackhole DoS origins, <a href="http://packetlife.net/blog/2009/jul/6/remotely-triggered-black-hole-rtbh-routing/">Remotely Triggered Blackhole Routing</a>.</p>
+
+<p>Another use is to provide failover at layer 3, as an alternative to services
+like <a href="http://www.linux-ha.org/wiki/Main_Page">Heartbeat</a>. This post will explain how to use BGP to provide a highly
+available recursive DNS service.</p>
+
+<!--more-->
+
+
+<h4> Rationale</h4>
+
+<p>Why HA DNS? DNS is already able to handle outages if you specify more than one
+name server. Unfortunately, while true, in practice this breaks down. There can
+be a significant timeout before rolling over to the next resolver, a timeout
+which in many cases is longer than other application-level ones.</p>
+
+<p>The default on Ubuntu is 5 seconds, the same value as Varnish&rsquo;s default &lsquo;first
+byte&rsquo; timeout- in the simplest case this means that all database connections,
+reverse lookups or connections to web services could add 5 seconds <em>each</em> to
+the rendering time of a page. Even if you avoid the request failing, it will be
+significantly slower than if all of your resolvers were available.</p>
+
+<h4> Set up</h4>
+
+<p>For this example, there will be two machines serving DNS in an active/active
+set up. In the event that one of the machines fails then both sets of IPs will
+be handled by the single machine left. <a href="http://www.iweb.co.uk/">iWeb</a> deploys Ubuntu almost
+exclusively, so you&rsquo;ll need to mentally translate if you&rsquo;re using another
+distribution.</p>
+
+<pre><code>192.168.0.0/29:
+  192.168.0.1 - Border Router
+  192.168.0.2 - Machine A's Real IP
+  192.168.0.3 - Machine B's Real IP
+  192.168.0.4 - First Virtual IP
+  192.168.0.5 - Second Virtual IP
+192.168.0.8/29:
+  192.168.0.9 - Border Router (Area 0)
+  192.168.0.10 - A Client
+</code></pre>
+
+<h4>Network Bit</h4>
+
+<p>Configure the networking like below. Machine B is the same as Machine A except
+for its real IP; replace 192.168.0.2 with 192.168.0.3.</p>
+
+<p><div class='bogus-wrapper'><notextile><figure class='code'><figcaption><span>&ldquo;Machine A &ndash;</span><a href='/etc/network/interfaces&rdquo;'>link</a></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>&lt;/p>
+</span><span class='line'>
+</span><span class='line'>&lt;p>auto lo
+</span><span class='line'>iface lo inet loopback&lt;/p>
+</span><span class='line'>
+</span><span class='line'>&lt;p>auto lo:0
+</span><span class='line'>iface lo:0 inet static
+</span><span class='line'>address 192.168.0.4
+</span><span class='line'>netmask 255.255.255.255&lt;/p>
+</span><span class='line'>
+</span><span class='line'>&lt;p>auto lo:1
+</span><span class='line'>iface lo:1 inet static
+</span><span class='line'>address 192.168.0.5
+</span><span class='line'>netmask 255.255.255.255&lt;/p>
+</span><span class='line'>
+</span><span class='line'>&lt;p>auto eth0
+</span><span class='line'>iface eth0 inet static
+</span><span class='line'>address 192.168.0.2
+</span><span class='line'>netmask 255.255.255.248
+</span><span class='line'>gateway 192.168.0.1&lt;/p>
+</span><span class='line'>
+</span><span class='line'>&lt;p></span></code></pre></td></tr></table></div></figure></notextile></div></p>
+
+<p>As both of the machines' <code>eth0</code> interfaces are in the same LAN they will both
+clash by sending out ARP responses for the same IPs. We can tell the kernel to
+only answer ARP requests which match the interface the request came in from:</p>
+
+<p><div class='bogus-wrapper'><notextile><figure class='code'><figcaption><span>&ldquo;/etc/sysctl.conf&rdquo; </span></figcaption>
+ <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='bash'><span class='line'>net.ipv4.conf.eth0.arp_ignore <span class="o">=</span> 1
+</span><span class='line'>net.ipv4.conf.eth0.arp_announce <span class="o">=</span> 2
+</span></code></pre></td></tr></table></div></figure></notextile></div></p>
+
+<p>Reload with <code>sysctl -p</code>.</p>
+
+<h4>DNS Bit</h4>
+
+<p>The basic DNS install is uneventful: install the daemons and <em>make sure</em> to
+lock down the recursive resolver to your network. I&rsquo;m assuming that you
+want to serve all of the hypothetical 192.168.0.0/24 block.</p>
+
+<pre><code>apt-get install bind9
+vi /etc/bind/named.conf.options
+# add the line
+#      allow-query-cache { 192.168.0.0/24; }; 
+# inside the options stanza
+/etc/init.d/bind9 restart
+</code></pre>
+
+<h4>BGP Bit</h4>
+
+<p>We&rsquo;re going to use <a href="http://code.google.com/p/exabgp/">exabgp</a> by <a href="http://thomas.mangin.com/">Thomas Mangin</a> on the DNS server side &ndash;
+it&rsquo;s a pure-Python BGP implementation that doesn&rsquo;t depend on too much. On the
+router we&rsquo;re going to use <a href="http://www.quagga.net/">Quagga</a>, though the syntax should basically be
+identical for IOS.</p>
+
+<p>It&rsquo;s not packaged <em>for Lucid</em>, so we&rsquo;ll install using <code>pip</code>.</p>
+
+<pre><code>apt-get install python-pip
+pip install exabgp
+</code></pre>
+
+<p>That puts it in <code>/usr/local/bin/exabgp</code>, we&rsquo;ll need to supply our own config
+file and be responsible for launching it. Here&rsquo;s an example <code>upstart</code> job:</p>
+
+<p><div class='bogus-wrapper'><notextile><figure class='code'> <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class='bash'><span class='line'>start on runlevel <span class="o">[</span>2345<span class="o">]</span>
+</span><span class='line'>stop on runlevel <span class="o">[</span>!2345<span class="o">]</span>
+</span><span class='line'>respawn
+</span><span class='line'><span class="nb">exec</span> /usr/local/bin/exabgp /etc/bgp.conf
+</span></code></pre></td></tr></table></div></figure></notextile></div></p>
+
+<p><em>Update:</em> ExaBGP is, infact, packaged in Oneiric and Precise, though it&rsquo;s the
+previous stable release.</p>
+
+<blockquote class="twitter-tweet"><p>Ubuntu users will find ExaBGP on Oneiric <a href="http://t.co/3pXamdn3" title="http://packages.ubuntu.com/hu/oneiric/net/exabgp">packages.ubuntu.com/hu/oneiric/net…</a></p>&mdash; ExaBGP (@exabgp) <a href="https://twitter.com/exabgp/status/148911146781523968" data-datetime="2011-12-19T23:42:38+00:00">December 19, 2011</a></blockquote>
+
+
+<script src="http://blog.iweb-hosting.co.uk//platform.twitter.com/widgets.js" charset="utf-8"></script>
+
+
+<p>Our upstream router advertises its connected routes into OSPF area 0. Because
+it has 192.168.0.1/29 as an interface it will advertise this whole network, and we
+won&rsquo;t need to redistribute BGP into OSPF. Something like the below Quagga
+config will do. This is not a complete Quagga config, you should follow another
+guide to get basic routing up and running.</p>
+
+<p><div class='bogus-wrapper'><notextile><figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>router bgp 64512
+</span><span class='line'> bgp router-id 192.168.0.1
+</span><span class='line'> neighbor 192.168.0.2 remote-as 64512
+</span><span class='line'> neighbor 192.168.0.2 timers 5 10
+</span><span class='line'> neighbor 192.168.0.3 remote-as 64512
+</span><span class='line'> neighbor 192.168.0.3 timers 5 10
+</span><span class='line'>!
+</span><span class='line'>router ospf
+</span><span class='line'> ospf router-id 192.168.0.9
+</span><span class='line'> redistribute connected metric 60
+</span><span class='line'> network 192.168.0.8/29 area 0.0.0.0
+</span><span class='line'>!</span></code></pre></td></tr></table></div></figure></notextile></div></p>
+
+<p>AS numbers above 64511 are reserved for private use, so you can use this freely.</p>
+
+<p>This will advertise 192.168.0.0/29 into area 0 unconditionally. We have set up
+both of the &lsquo;real&rsquo; IPs as iBGP peers, and set very short values for the
+keep-alive and hold-time timers. We will advertise ourselves every five seconds,
+and if we don&rsquo;t hear from <code>exabgp</code> every 10 seconds we will consider that
+path to be dead.</p>
+
+<p>The defaults are 60 and 180 seconds respectively, but that would lead to a
+noticable outage, though of course YMMV.</p>
+
+<p>For the <code>exabgp</code> side, use a config like this for Machine A:</p>
+
+<p><div class='bogus-wrapper'><notextile><figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>neighbor 192.168.0.2 {&lt;/p>
+</span><span class='line'>
+</span><span class='line'>&lt;pre>&lt;code>router-id 192.168.0.2;
+</span><span class='line'>local-address 192.168.0.2;
+</span><span class='line'>local-as 64512;
+</span><span class='line'>peer-as 64512;
+</span><span class='line'>hold-time 5;
+</span><span class='line'>static {
+</span><span class='line'>    route 192.168.0.4/32 next-hop 192.168.0.2 local-preference 200;
+</span><span class='line'>    route 192.168.0.5/32 next-hop 192.168.0.2 local-preference 150;
+</span><span class='line'>}
+</span><span class='line'>&lt;/code>&lt;/pre>
+</span><span class='line'>
+</span><span class='line'>&lt;p>}</span></code></pre></td></tr></table></div></figure></notextile></div></p>
+
+<p>And this for Machine B:</p>
+
+<p><div class='bogus-wrapper'><notextile><figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>neighbor 192.168.0.3 {&lt;/p>
+</span><span class='line'>
+</span><span class='line'>&lt;pre>&lt;code>router-id 192.168.0.3;
+</span><span class='line'>local-address 192.168.0.3;
+</span><span class='line'>local-as 64512;
+</span><span class='line'>peer-as 64512;
+</span><span class='line'>hold-time 5;
+</span><span class='line'>static {
+</span><span class='line'>    route 192.168.0.4/32 next-hop 192.168.0.3 local-preference 150;
+</span><span class='line'>    route 192.168.0.5/32 next-hop 192.168.0.3 local-preference 200;
+</span><span class='line'>}
+</span><span class='line'>&lt;/code>&lt;/pre>
+</span><span class='line'>
+</span><span class='line'>&lt;p>}</span></code></pre></td></tr></table></div></figure></notextile></div></p>
+
+<p>We&rsquo;re not learning any routes, we&rsquo;re exclusively advertising routes. Machine A
+will advertise both routes, with a higher priority for the first VIP, and
+Machine B will do the same with a higher priority for the second VIP. Local
+preference seems to be more effective than weight or metrics for bullying iBGP
+into doing what you want.</p>
+
+<p>On each machine, start the BGP process and watch tcpdump while you ping the
+virtual IPs.</p>
+
+<pre><code>start bgp
+tcpdump -ni any icmp
+tcpdump: verbose output suppressed, use -v or -vv for full protocol decode
+listening on any, link-type LINUX_SLL (Linux cooked), capture size 96 bytes
+23:44:59.389054 IP 192.168.0.10 &gt; 192.168.0.4: ICMP echo request, id 40574, seq 1, length 64
+23:44:59.389256 IP 192.168.0.4 &gt; 192.168.0.10: ICMP echo reply, id 40574, seq 1, length 64
+</code></pre>
+
+<p>You should see the first VIP pings appear on Machine A, and the second VIP
+pings on Machine B. Keep those pings going.</p>
+
+<p>By stopping the BGP service on either box you should see the hand-over happen
+with no missed pings. If you force a failure of one of the machines, it will be
+within seconds:</p>
+
+<pre><code>iptables -I INPUT -i eth0 -j DROP
+</code></pre>
+
+<p>then:</p>
+
+<pre><code>PING 91.208.170.131 (91.208.170.131) 56(84) bytes of data.
+64 bytes from 91.208.170.131: icmp_seq=1 ttl=63 time=1.02 ms
+64 bytes from 91.208.170.131: icmp_seq=2 ttl=63 time=0.890 ms
+64 bytes from 91.208.170.131: icmp_seq=3 ttl=63 time=4.23 ms
+[ Four missed pings ]
+64 bytes from 91.208.170.131: icmp_seq=8 ttl=63 time=0.956 ms
+64 bytes from 91.208.170.131: icmp_seq=9 ttl=63 time=1.94 ms
+</code></pre>
+
+<p>Hopefully this has been instructive. If you have any comments, please direct
+them to my Twitter account, <a href="http://twitter.com/insom">@insom</a>.</p>
+]]></content>
+  </entry>
+  
+</feed>
