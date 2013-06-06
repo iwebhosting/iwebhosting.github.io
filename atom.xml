@@ -2,10 +2,10 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
 
   <title><![CDATA[iWeb Hosting]]></title>
-  <link href="http://blog.iweb-hosting.co.uk/atom.xml" rel="self"/>
-  <link href="http://blog.iweb-hosting.co.uk/"/>
-  <updated>2013-06-06T22:29:59+01:00</updated>
-  <id>http://blog.iweb-hosting.co.uk/</id>
+  <link href="http://iwebhosting.github.io/atom.xml" rel="self"/>
+  <link href="http://iwebhosting.github.io/"/>
+  <updated>2013-06-06T23:01:56+01:00</updated>
+  <id>http://iwebhosting.github.io/</id>
   <author>
     <name><![CDATA[iWeb Hosting]]></name>
     
@@ -15,9 +15,9 @@
   
   <entry>
     <title type="html"><![CDATA[Forcing Exim Local Delivery on Ubuntu (For Development)]]></title>
-    <link href="http://blog.iweb-hosting.co.uk/blog/2013/06/06/forcing-exim-local-delivery-on-ubuntu-for-development/"/>
+    <link href="http://iwebhosting.github.io/blog/2013/06/06/forcing-exim-local-delivery-on-ubuntu-for-development/"/>
     <updated>2013-06-06T17:16:00+01:00</updated>
-    <id>http://blog.iweb-hosting.co.uk/blog/2013/06/06/forcing-exim-local-delivery-on-ubuntu-for-development</id>
+    <id>http://iwebhosting.github.io/blog/2013/06/06/forcing-exim-local-delivery-on-ubuntu-for-development</id>
     <content type="html"><![CDATA[<p>Sometimes you want to run development code against your production database before it goes live, as a test, but want to make sure that there are no side effects from this process.</p>
 
 <p>Recently a developer at iWeb wanted to test some email code&rsquo;s interaction with a real mail server, without potentially mailing thousands of real customers. Mocks wouldn&rsquo;t be suitable because the tests cross the API boundary; it&rsquo;s not enough to know it&rsquo;s called, they needed to see what it <em>did</em>.</p>
@@ -71,10 +71,10 @@ No message, no subject; hope that's ok
   
   <entry>
     <title type="html"><![CDATA[Moving Varnish caching logic into PHP with the cURL VMOD]]></title>
-    <link href="http://blog.iweb-hosting.co.uk/blog/2012/11/20/moving-varnish-caching-logic-into-php-with-the-curl-vmod/"/>
+    <link href="http://iwebhosting.github.io/blog/2012/11/20/moving-varnish-caching-logic-into-php-with-the-curl-vmod/"/>
     <updated>2012-11-20T14:46:00+00:00</updated>
-    <id>http://blog.iweb-hosting.co.uk/blog/2012/11/20/moving-varnish-caching-logic-into-php-with-the-curl-vmod</id>
-    <content type="html"><![CDATA[<p>As part of our general quest to provide <a href="http://blog.iweb-hosting.co.uk/blog/2012/09/11/diagnosing-magento-speed-issues-with-strace/">fast Magento hosting</a>, we&rsquo;ve
+    <id>http://iwebhosting.github.io/blog/2012/11/20/moving-varnish-caching-logic-into-php-with-the-curl-vmod</id>
+    <content type="html"><![CDATA[<p>As part of our general quest to provide <a href="http://iwebhosting.github.io/blog/2012/09/11/diagnosing-magento-speed-issues-with-strace/">fast Magento hosting</a>, we&rsquo;ve
 spent some time exploring new features in <a href="https://www.varnish-cache.org/releases/varnish-cache-3.0.0">Varnish 3.0</a>. VMOD support means that there&rsquo;s a supported way of extending VCL with modules in their own name
 spaces. Some of the modules from <a href="https://www.varnish-cache.org/vmods">the VMOD list</a> looked really
 interesting; particularly <a href="https://github.com/zephirworks/libvmod-redis">Redis</a>, <a href="https://github.com/sodabrew/libvmod-memcached">Memcached</a> and
@@ -325,13 +325,13 @@ the above can be applied to other non-trivial web applications.</p>
   
   <entry>
     <title type="html"><![CDATA[Diagnosing Magento speed issues with strace]]></title>
-    <link href="http://blog.iweb-hosting.co.uk/blog/2012/09/11/diagnosing-magento-speed-issues-with-strace/"/>
+    <link href="http://iwebhosting.github.io/blog/2012/09/11/diagnosing-magento-speed-issues-with-strace/"/>
     <updated>2012-09-11T10:28:00+01:00</updated>
-    <id>http://blog.iweb-hosting.co.uk/blog/2012/09/11/diagnosing-magento-speed-issues-with-strace</id>
+    <id>http://iwebhosting.github.io/blog/2012/09/11/diagnosing-magento-speed-issues-with-strace</id>
     <content type="html"><![CDATA[<p>When your application depends on a remote service, and that service is either
 down or slow, it will directly affect your own application&rsquo;s performance.</p>
 
-<p><img src="http://blog.iweb-hosting.co.uk/assets/magento-slow.png" alt="Slow Website" /></p>
+<p><img src="http://iwebhosting.github.io/assets/magento-slow.png" alt="Slow Website" /></p>
 
 <p>There are tools targeted directly at developers, like <a href="http://www.xdebug.org/">Xdebug</a> and
 <a href="http://kcachegrind.sourceforge.net/html/Home.html">KCachegrind</a> but traditional sysadmin tools also have a place and provide a
@@ -542,9 +542,9 @@ an actual web server.</p>
   
   <entry>
     <title type="html"><![CDATA[Magento to WebSockets, via Redis, Node and Juggernaut]]></title>
-    <link href="http://blog.iweb-hosting.co.uk/blog/2012/02/24/magento-to-websockets/"/>
+    <link href="http://iwebhosting.github.io/blog/2012/02/24/magento-to-websockets/"/>
     <updated>2012-02-24T23:02:00+00:00</updated>
-    <id>http://blog.iweb-hosting.co.uk/blog/2012/02/24/magento-to-websockets</id>
+    <id>http://iwebhosting.github.io/blog/2012/02/24/magento-to-websockets</id>
     <content type="html"><![CDATA[<p>I tried to squeeze more hipster web development tech into the title, but we&rsquo;ll
 have to just make do with the above.</p>
 
@@ -593,9 +593,9 @@ you towards <a href="http://www.iwebsolutions.co.uk/">our parent company</a>).</
   
   <entry>
     <title type="html"><![CDATA[Lunchtime Project: Apache Space Core Module]]></title>
-    <link href="http://blog.iweb-hosting.co.uk/blog/2012/02/08/lunchtime-project-apache-space-core-module/"/>
+    <link href="http://iwebhosting.github.io/blog/2012/02/08/lunchtime-project-apache-space-core-module/"/>
     <updated>2012-02-08T21:08:00+00:00</updated>
-    <id>http://blog.iweb-hosting.co.uk/blog/2012/02/08/lunchtime-project-apache-space-core-module</id>
+    <id>http://iwebhosting.github.io/blog/2012/02/08/lunchtime-project-apache-space-core-module</id>
     <content type="html"><![CDATA[<p>Show and tell time!</p>
 
 <p><a href="http://twitter.com/DazWorrall">Darren</a> mentioned in passing how we should return quotes in the HTTP
@@ -991,9 +991,9 @@ on Twitter via <a href="http://twitter.com/insom">@insom</a></p>
   
   <entry>
     <title type="html"><![CDATA[Using BGP to serve High-Availability DNS]]></title>
-    <link href="http://blog.iweb-hosting.co.uk/blog/2012/01/27/using-bgp-to-serve-high-availability-dns/"/>
+    <link href="http://iwebhosting.github.io/blog/2012/01/27/using-bgp-to-serve-high-availability-dns/"/>
     <updated>2012-01-27T22:48:00+00:00</updated>
-    <id>http://blog.iweb-hosting.co.uk/blog/2012/01/27/using-bgp-to-serve-high-availability-dns</id>
+    <id>http://iwebhosting.github.io/blog/2012/01/27/using-bgp-to-serve-high-availability-dns</id>
     <content type="html"><![CDATA[<p>Routing protocols, like BGP and OSPF, can be used for more than just
 establishing connectivity. The best-known example of this is probably using BGP
 to blackhole DoS origins, <a href="http://packetlife.net/blog/2009/jul/6/remotely-triggered-black-hole-rtbh-routing/">Remotely Triggered Blackhole Routing</a>.</p>
@@ -1042,7 +1042,7 @@ distribution.</p>
 <p>Configure the networking like below. Machine B is the same as Machine A except
 for its real IP; replace 192.168.0.2 with 192.168.0.3.</p>
 
-<figure class='code'><figcaption><span>&#8220;Machine A -</span><a href='http://blog.iweb-hosting.co.uk/etc/network/interfaces"'>link</a></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<figure class='code'><figcaption><span>&#8220;Machine A -</span><a href='http://iwebhosting.github.io/etc/network/interfaces"'>link</a></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 <span class='line-number'>2</span>
 <span class='line-number'>3</span>
 <span class='line-number'>4</span>
@@ -1141,7 +1141,7 @@ previous stable release.</p>
 <blockquote class="twitter-tweet"><p>Ubuntu users will find ExaBGP on Oneiric <a href="http://t.co/3pXamdn3" title="http://packages.ubuntu.com/hu/oneiric/net/exabgp">packages.ubuntu.com/hu/oneiric/net…</a></p>&mdash; ExaBGP (@exabgp) <a href="https://twitter.com/exabgp/status/148911146781523968" data-datetime="2011-12-19T23:42:38+00:00">December 19, 2011</a></blockquote>
 
 
-<script src="http://blog.iweb-hosting.co.uk//platform.twitter.com/widgets.js" charset="utf-8"></script>
+<script src="http://iwebhosting.github.io//platform.twitter.com/widgets.js" charset="utf-8"></script>
 
 
 <p>Our upstream router advertises its connected routes into OSPF area 0. Because
@@ -1284,9 +1284,9 @@ them to my Twitter account, <a href="http://twitter.com/insom">@insom</a>.</p>
   
   <entry>
     <title type="html"><![CDATA[Where we are]]></title>
-    <link href="http://blog.iweb-hosting.co.uk/blog/2012/01/23/where-we-are/"/>
+    <link href="http://iwebhosting.github.io/blog/2012/01/23/where-we-are/"/>
     <updated>2012-01-23T15:41:00+00:00</updated>
-    <id>http://blog.iweb-hosting.co.uk/blog/2012/01/23/where-we-are</id>
+    <id>http://iwebhosting.github.io/blog/2012/01/23/where-we-are</id>
     <content type="html"><![CDATA[<p>A mini <a href="http://en.wikipedia.org/wiki/State_of_the_Union_address">state of the union</a>, if you like. I thought it would be worthwhile to outline where we are at the moment, and touch a little on whats coming up.</p>
 
 <!--more-->
@@ -1310,9 +1310,9 @@ them to my Twitter account, <a href="http://twitter.com/insom">@insom</a>.</p>
   
   <entry>
     <title type="html"><![CDATA[Hubot HTTP Daemon Support]]></title>
-    <link href="http://blog.iweb-hosting.co.uk/blog/2012/01/21/hubot-http-daemon-support/"/>
+    <link href="http://iwebhosting.github.io/blog/2012/01/21/hubot-http-daemon-support/"/>
     <updated>2012-01-21T17:02:00+00:00</updated>
-    <id>http://blog.iweb-hosting.co.uk/blog/2012/01/21/hubot-http-daemon-support</id>
+    <id>http://iwebhosting.github.io/blog/2012/01/21/hubot-http-daemon-support</id>
     <content type="html"><![CDATA[<p><a href="http://hubot.github.com/">Hubot</a>, Github&rsquo;s excellent CoffeeScript-based chat bot recently gained
 support for running an internal HTTP daemon. Previously, this had to be done by
 hand by plugins which expected to receive events from outside sources, like in

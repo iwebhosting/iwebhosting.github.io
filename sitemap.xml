@@ -1,57 +1,57 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <urlset xmlns='http://www.sitemaps.org/schemas/sitemap/0.9'>
     <url>
-        <loc>http://blog.iweb-hosting.co.uk/blog/2012/01/21/hubot-http-daemon-support/</loc>
+        <loc>http://iwebhosting.github.io/blog/2012/01/21/hubot-http-daemon-support/</loc>
         <lastmod>2013-06-06T22:28:49+01:00</lastmod>
     </url>
     <url>
-        <loc>http://blog.iweb-hosting.co.uk/blog/2012/01/23/where-we-are/</loc>
+        <loc>http://iwebhosting.github.io/blog/2012/01/23/where-we-are/</loc>
         <lastmod>2013-06-06T22:28:49+01:00</lastmod>
     </url>
     <url>
         <loc>
-            http://blog.iweb-hosting.co.uk/blog/2012/01/27/using-bgp-to-serve-high-availability-dns/
+            http://iwebhosting.github.io/blog/2012/01/27/using-bgp-to-serve-high-availability-dns/
         </loc>
         <lastmod>2013-06-06T22:28:49+01:00</lastmod>
     </url>
     <url>
         <loc>
-            http://blog.iweb-hosting.co.uk/blog/2012/02/08/lunchtime-project-apache-space-core-module/
+            http://iwebhosting.github.io/blog/2012/02/08/lunchtime-project-apache-space-core-module/
         </loc>
         <lastmod>2013-06-06T22:28:49+01:00</lastmod>
     </url>
     <url>
-        <loc>http://blog.iweb-hosting.co.uk/blog/2012/02/24/magento-to-websockets/</loc>
+        <loc>http://iwebhosting.github.io/blog/2012/02/24/magento-to-websockets/</loc>
         <lastmod>2013-06-06T22:28:49+01:00</lastmod>
     </url>
     <url>
         <loc>
-            http://blog.iweb-hosting.co.uk/blog/2012/09/11/diagnosing-magento-speed-issues-with-strace/
-        </loc>
-        <lastmod>2013-06-06T22:28:49+01:00</lastmod>
-    </url>
-    <url>
-        <loc>
-            http://blog.iweb-hosting.co.uk/blog/2012/11/20/moving-varnish-caching-logic-into-php-with-the-curl-vmod/
+            http://iwebhosting.github.io/blog/2012/09/11/diagnosing-magento-speed-issues-with-strace/
         </loc>
         <lastmod>2013-06-06T22:28:49+01:00</lastmod>
     </url>
     <url>
         <loc>
-            http://blog.iweb-hosting.co.uk/blog/2013/06/06/forcing-exim-local-delivery-on-ubuntu-for-development/
+            http://iwebhosting.github.io/blog/2012/11/20/moving-varnish-caching-logic-into-php-with-the-curl-vmod/
         </loc>
         <lastmod>2013-06-06T22:28:49+01:00</lastmod>
     </url>
     <url>
-        <loc>http://blog.iweb-hosting.co.uk/blog/archives/</loc>
+        <loc>
+            http://iwebhosting.github.io/blog/2013/06/06/forcing-exim-local-delivery-on-ubuntu-for-development/
+        </loc>
         <lastmod>2013-06-06T22:28:49+01:00</lastmod>
     </url>
     <url>
-        <loc>http://blog.iweb-hosting.co.uk/</loc>
+        <loc>http://iwebhosting.github.io/blog/archives/</loc>
         <lastmod>2013-06-06T22:28:49+01:00</lastmod>
     </url>
     <url>
-        <loc>http://blog.iweb-hosting.co.uk/robots.txt</loc>
+        <loc>http://iwebhosting.github.io/</loc>
+        <lastmod>2013-06-06T22:28:49+01:00</lastmod>
+    </url>
+    <url>
+        <loc>http://iwebhosting.github.io/robots.txt</loc>
         <lastmod>2013-06-06T22:28:10+01:00</lastmod>
     </url>
 </urlset>

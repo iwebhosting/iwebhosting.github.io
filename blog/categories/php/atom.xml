@@ -2,10 +2,10 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
 
   <title><![CDATA[Category: PHP | iWeb Hosting]]></title>
-  <link href="http://blog.iweb-hosting.co.uk/blog/categories/php/atom.xml" rel="self"/>
-  <link href="http://blog.iweb-hosting.co.uk/"/>
-  <updated>2013-06-06T22:29:59+01:00</updated>
-  <id>http://blog.iweb-hosting.co.uk/</id>
+  <link href="http://iwebhosting.github.io/blog/categories/php/atom.xml" rel="self"/>
+  <link href="http://iwebhosting.github.io/"/>
+  <updated>2013-06-06T23:01:56+01:00</updated>
+  <id>http://iwebhosting.github.io/</id>
   <author>
     <name><![CDATA[iWeb Hosting]]></name>
     
@@ -15,9 +15,9 @@
   
   <entry>
     <title type="html"><![CDATA[Moving Varnish caching logic into PHP with the cURL VMOD]]></title>
-    <link href="http://blog.iweb-hosting.co.uk/blog/2012/11/20/moving-varnish-caching-logic-into-php-with-the-curl-vmod/"/>
+    <link href="http://iwebhosting.github.io/blog/2012/11/20/moving-varnish-caching-logic-into-php-with-the-curl-vmod/"/>
     <updated>2012-11-20T14:46:00+00:00</updated>
-    <id>http://blog.iweb-hosting.co.uk/blog/2012/11/20/moving-varnish-caching-logic-into-php-with-the-curl-vmod</id>
+    <id>http://iwebhosting.github.io/blog/2012/11/20/moving-varnish-caching-logic-into-php-with-the-curl-vmod</id>
     <content type="html"><![CDATA[<p>As part of our general quest to provide <a href="/blog/2012/09/11/diagnosing-magento-speed-issues-with-strace/">fast Magento hosting</a>, we&rsquo;ve
 spent some time exploring new features in <a href="https://www.varnish-cache.org/releases/varnish-cache-3.0.0">Varnish 3.0</a>. VMOD support means that there&rsquo;s a supported way of extending VCL with modules in their own name
 spaces. Some of the modules from <a href="https://www.varnish-cache.org/vmods">the VMOD list</a> looked really

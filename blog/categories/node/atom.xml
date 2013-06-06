@@ -2,10 +2,10 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
 
   <title><![CDATA[Category: Node | iWeb Hosting]]></title>
-  <link href="http://blog.iweb-hosting.co.uk/blog/categories/node/atom.xml" rel="self"/>
-  <link href="http://blog.iweb-hosting.co.uk/"/>
-  <updated>2013-06-06T22:29:59+01:00</updated>
-  <id>http://blog.iweb-hosting.co.uk/</id>
+  <link href="http://iwebhosting.github.io/blog/categories/node/atom.xml" rel="self"/>
+  <link href="http://iwebhosting.github.io/"/>
+  <updated>2013-06-06T23:01:56+01:00</updated>
+  <id>http://iwebhosting.github.io/</id>
   <author>
     <name><![CDATA[iWeb Hosting]]></name>
     
@@ -15,9 +15,9 @@
   
   <entry>
     <title type="html"><![CDATA[Magento to WebSockets, via Redis, Node and Juggernaut]]></title>
-    <link href="http://blog.iweb-hosting.co.uk/blog/2012/02/24/magento-to-websockets/"/>
+    <link href="http://iwebhosting.github.io/blog/2012/02/24/magento-to-websockets/"/>
     <updated>2012-02-24T23:02:00+00:00</updated>
-    <id>http://blog.iweb-hosting.co.uk/blog/2012/02/24/magento-to-websockets</id>
+    <id>http://iwebhosting.github.io/blog/2012/02/24/magento-to-websockets</id>
     <content type="html"><![CDATA[<p>I tried to squeeze more hipster web development tech into the title, but we&rsquo;ll
 have to just make do with the above.</p>
 

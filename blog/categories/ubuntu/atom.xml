@@ -2,10 +2,10 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
 
   <title><![CDATA[Category: Ubuntu | iWeb Hosting]]></title>
-  <link href="http://blog.iweb-hosting.co.uk/blog/categories/ubuntu/atom.xml" rel="self"/>
-  <link href="http://blog.iweb-hosting.co.uk/"/>
-  <updated>2013-06-06T22:29:59+01:00</updated>
-  <id>http://blog.iweb-hosting.co.uk/</id>
+  <link href="http://iwebhosting.github.io/blog/categories/ubuntu/atom.xml" rel="self"/>
+  <link href="http://iwebhosting.github.io/"/>
+  <updated>2013-06-06T23:01:56+01:00</updated>
+  <id>http://iwebhosting.github.io/</id>
   <author>
     <name><![CDATA[iWeb Hosting]]></name>
     
@@ -15,9 +15,9 @@
   
   <entry>
     <title type="html"><![CDATA[Forcing Exim Local Delivery on Ubuntu (For Development)]]></title>
-    <link href="http://blog.iweb-hosting.co.uk/blog/2013/06/06/forcing-exim-local-delivery-on-ubuntu-for-development/"/>
+    <link href="http://iwebhosting.github.io/blog/2013/06/06/forcing-exim-local-delivery-on-ubuntu-for-development/"/>
     <updated>2013-06-06T17:16:00+01:00</updated>
-    <id>http://blog.iweb-hosting.co.uk/blog/2013/06/06/forcing-exim-local-delivery-on-ubuntu-for-development</id>
+    <id>http://iwebhosting.github.io/blog/2013/06/06/forcing-exim-local-delivery-on-ubuntu-for-development</id>
     <content type="html"><![CDATA[<p>Sometimes you want to run development code against your production database before it goes live, as a test, but want to make sure that there are no side effects from this process.</p>
 
 <p>Recently a developer at iWeb wanted to test some email code&rsquo;s interaction with a real mail server, without potentially mailing thousands of real customers. Mocks wouldn&rsquo;t be suitable because the tests cross the API boundary; it&rsquo;s not enough to know it&rsquo;s called, they needed to see what it <em>did</em>.</p>

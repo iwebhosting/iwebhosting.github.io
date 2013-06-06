@@ -2,10 +2,10 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
 
   <title><![CDATA[Category: BGP | iWeb Hosting]]></title>
-  <link href="http://blog.iweb-hosting.co.uk/blog/categories/bgp/atom.xml" rel="self"/>
-  <link href="http://blog.iweb-hosting.co.uk/"/>
-  <updated>2013-06-06T22:29:59+01:00</updated>
-  <id>http://blog.iweb-hosting.co.uk/</id>
+  <link href="http://iwebhosting.github.io/blog/categories/bgp/atom.xml" rel="self"/>
+  <link href="http://iwebhosting.github.io/"/>
+  <updated>2013-06-06T23:01:56+01:00</updated>
+  <id>http://iwebhosting.github.io/</id>
   <author>
     <name><![CDATA[iWeb Hosting]]></name>
     
@@ -15,9 +15,9 @@
   
   <entry>
     <title type="html"><![CDATA[Using BGP to serve High-Availability DNS]]></title>
-    <link href="http://blog.iweb-hosting.co.uk/blog/2012/01/27/using-bgp-to-serve-high-availability-dns/"/>
+    <link href="http://iwebhosting.github.io/blog/2012/01/27/using-bgp-to-serve-high-availability-dns/"/>
     <updated>2012-01-27T22:48:00+00:00</updated>
-    <id>http://blog.iweb-hosting.co.uk/blog/2012/01/27/using-bgp-to-serve-high-availability-dns</id>
+    <id>http://iwebhosting.github.io/blog/2012/01/27/using-bgp-to-serve-high-availability-dns</id>
     <content type="html"><![CDATA[<p>Routing protocols, like BGP and OSPF, can be used for more than just
 establishing connectivity. The best-known example of this is probably using BGP
 to blackhole DoS origins, <a href="http://packetlife.net/blog/2009/jul/6/remotely-triggered-black-hole-rtbh-routing/">Remotely Triggered Blackhole Routing</a>.</p>
@@ -170,7 +170,7 @@ previous stable release.</p>
 <blockquote class="twitter-tweet"><p>Ubuntu users will find ExaBGP on Oneiric <a href="http://t.co/3pXamdn3" title="http://packages.ubuntu.com/hu/oneiric/net/exabgp">packages.ubuntu.com/hu/oneiric/net…</a></p>&mdash; ExaBGP (@exabgp) <a href="https://twitter.com/exabgp/status/148911146781523968" data-datetime="2011-12-19T23:42:38+00:00">December 19, 2011</a></blockquote>
 
 
-<script src="http://blog.iweb-hosting.co.uk//platform.twitter.com/widgets.js" charset="utf-8"></script>
+<script src="http://iwebhosting.github.io//platform.twitter.com/widgets.js" charset="utf-8"></script>
 
 
 <p>Our upstream router advertises its connected routes into OSPF area 0. Because

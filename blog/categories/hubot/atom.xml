@@ -2,10 +2,10 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
 
   <title><![CDATA[Category: Hubot | iWeb Hosting]]></title>
-  <link href="http://blog.iweb-hosting.co.uk/blog/categories/hubot/atom.xml" rel="self"/>
-  <link href="http://blog.iweb-hosting.co.uk/"/>
-  <updated>2013-06-06T22:29:59+01:00</updated>
-  <id>http://blog.iweb-hosting.co.uk/</id>
+  <link href="http://iwebhosting.github.io/blog/categories/hubot/atom.xml" rel="self"/>
+  <link href="http://iwebhosting.github.io/"/>
+  <updated>2013-06-06T23:01:56+01:00</updated>
+  <id>http://iwebhosting.github.io/</id>
   <author>
     <name><![CDATA[iWeb Hosting]]></name>
     
@@ -15,9 +15,9 @@
   
   <entry>
     <title type="html"><![CDATA[Hubot HTTP Daemon Support]]></title>
-    <link href="http://blog.iweb-hosting.co.uk/blog/2012/01/21/hubot-http-daemon-support/"/>
+    <link href="http://iwebhosting.github.io/blog/2012/01/21/hubot-http-daemon-support/"/>
     <updated>2012-01-21T17:02:00+00:00</updated>
-    <id>http://blog.iweb-hosting.co.uk/blog/2012/01/21/hubot-http-daemon-support</id>
+    <id>http://iwebhosting.github.io/blog/2012/01/21/hubot-http-daemon-support</id>
     <content type="html"><![CDATA[<p><a href="http://hubot.github.com/">Hubot</a>, Github&rsquo;s excellent CoffeeScript-based chat bot recently gained
 support for running an internal HTTP daemon. Previously, this had to be done by
 hand by plugins which expected to receive events from outside sources, like in
@@ -82,7 +82,7 @@ message and having it repeat it in the room:</p>
 <p><div class='bogus-wrapper'><notextile><figure class='code'><figcaption><span>&ldquo;Make Hubot speak&rdquo; </span></figcaption>
  <div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 <span class='line-number'>2</span>
-</pre></td><td class='code'><pre><code class='bash'><span class='line'>curl -d <span class="nv">room</span><span class="o">=</span>&lt;a <span class="nv">href</span><span class="o">=</span><span class="s2">&quot;&amp;#109;&amp;#x61;&amp;#105;&amp;#108;&amp;#x74;&amp;#111;&amp;#x3a;&amp;#x79;&amp;#111;&amp;#x75;&amp;#114;&amp;#114;&amp;#x6f;&amp;#111;&amp;#x6d;&amp;#64;&amp;#x63;&amp;#111;&amp;#110;&amp;#x66;&amp;#101;&amp;#114;&amp;#101;&amp;#110;&amp;#99;&amp;#101;&amp;#x2e;&amp;#x69;&amp;#x77;&amp;#x65;&amp;#98;&amp;#x2e;&amp;#99;&amp;#111;&amp;#46;&amp;#x75;&amp;#x6b;&quot;</span>&gt;&amp;#x79;&amp;#111;&amp;#x75;&amp;#114;&amp;#114;&amp;#x6f;&amp;#x6f;&amp;#109;&amp;#x40;&amp;#x63;&amp;#x6f;&amp;#x6e;&amp;#102;&amp;#x65;&amp;#x72;&amp;#101;&amp;#x6e;&amp;#x63;&amp;#101;&amp;#46;&amp;#x69;&amp;#119;&amp;#x65;&amp;#98;&amp;#46;&amp;#99;&amp;#111;&amp;#46;&amp;#117;&amp;#x6b;&lt;/a&gt; <span class="se">\</span>
+</pre></td><td class='code'><pre><code class='bash'><span class='line'>curl -d <span class="nv">room</span><span class="o">=</span>&lt;a <span class="nv">href</span><span class="o">=</span><span class="s2">&quot;&amp;#109;&amp;#x61;&amp;#105;&amp;#x6c;&amp;#x74;&amp;#111;&amp;#58;&amp;#x79;&amp;#111;&amp;#117;&amp;#x72;&amp;#x72;&amp;#111;&amp;#111;&amp;#x6d;&amp;#x40;&amp;#x63;&amp;#111;&amp;#110;&amp;#x66;&amp;#101;&amp;#114;&amp;#x65;&amp;#110;&amp;#99;&amp;#x65;&amp;#46;&amp;#x69;&amp;#x77;&amp;#x65;&amp;#x62;&amp;#46;&amp;#99;&amp;#x6f;&amp;#x2e;&amp;#x75;&amp;#107;&quot;</span>&gt;&amp;#x79;&amp;#111;&amp;#117;&amp;#114;&amp;#114;&amp;#x6f;&amp;#111;&amp;#109;&amp;#64;&amp;#99;&amp;#x6f;&amp;#110;&amp;#102;&amp;#x65;&amp;#x72;&amp;#101;&amp;#110;&amp;#x63;&amp;#101;&amp;#x2e;&amp;#105;&amp;#119;&amp;#101;&amp;#x62;&amp;#x2e;&amp;#99;&amp;#x6f;&amp;#x2e;&amp;#117;&amp;#107;&lt;/a&gt; <span class="se">\</span>
 </span><span class='line'>  -d <span class="nv">message</span><span class="o">=</span>Hello &lt;a <span class="nv">href</span><span class="o">=</span><span class="s2">&quot;http://appname.herokuapp.com/hubot/say&quot;</span>&gt;http://appname.herokuapp.com/hubot/say&lt;/a&gt;
 </span></code></pre></td></tr></table></div></figure></notextile></div></p>
 

@@ -1,4 +1,4 @@
 User-agent: *
 Disallow: 
 
-Sitemap: http://blog.iweb-hosting.co.uk/sitemap.xml 
+Sitemap: http://iwebhosting.github.io/sitemap.xml 
