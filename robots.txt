@@ -2,5 +2,3 @@ User-agent: *
 Disallow: 
 
 Sitemap: http://blog.iweb-hosting.co.uk/sitemap.xml 
-
-
