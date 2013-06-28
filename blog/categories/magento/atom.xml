@@ -4,7 +4,7 @@
   <title><![CDATA[Category: Magento | iWeb Hosting]]></title>
   <link href="http://iwebhosting.github.io/blog/categories/magento/atom.xml" rel="self"/>
   <link href="http://iwebhosting.github.io/"/>
-  <updated>2013-06-06T23:01:56+01:00</updated>
+  <updated>2013-06-28T17:02:31+01:00</updated>
   <id>http://iwebhosting.github.io/</id>
   <author>
     <name><![CDATA[iWeb Hosting]]></name>
@@ -263,11 +263,11 @@ parts of the core fire events without having a tight binding to what is
 receiving them. Classes register their interest in events via XML files. There
 are a lot of XML files in Magento.</p>
 
-<p>File /Users/aaron/Documents/Repo/octopress/source/downloads/code/magento/Iweb_Redis.xml could not be found</p>
+<p>File /Users/aaron/Documents/Repo/iwebhosting-octopress/source/downloads/code/magento/Iweb_Redis.xml could not be found</p>
 
-<p>File /Users/aaron/Documents/Repo/octopress/source/downloads/code/magento/config.xml could not be found</p>
+<p>File /Users/aaron/Documents/Repo/iwebhosting-octopress/source/downloads/code/magento/config.xml could not be found</p>
 
-<p>File /Users/aaron/Documents/Repo/octopress/source/downloads/code/magento/Observer.php could not be found</p>
+<p>File /Users/aaron/Documents/Repo/iwebhosting-octopress/source/downloads/code/magento/Observer.php could not be found</p>
 
 <p>Simple, isn&rsquo;t it? We&rsquo;ll also need <a href="https://github.com/colinmollenhour/credis">Credis</a> put somewhere the autoloader can
 find it. Cloning <code>git://github.com/colinmollenhour/credis.git</code> into
